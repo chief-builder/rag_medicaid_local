@@ -4,6 +4,7 @@ import pdfParse from 'pdf-parse';
 import { OcrResult, OcrPage } from '../types/index.js';
 import { LMStudioClient } from '../clients/lm-studio.js';
 import { createChildLogger } from '../utils/logger.js';
+import { sanitizeForPostgres } from '../utils/text-sanitizer.js';
 
 const logger = createChildLogger('pdf-processor');
 
@@ -79,7 +80,8 @@ export class PdfProcessor {
     // This is a simplified implementation that works with text PDFs
 
     const pdfData = await pdfParse(pdfBuffer);
-    const text = pdfData.text;
+    // Sanitize text to remove invalid UTF-8 characters
+    const text = sanitizeForPostgres(pdfData.text);
 
     // Split text by form feed or other page markers
     const pageTexts = text.split(/\f/);
@@ -173,7 +175,9 @@ export class PdfProcessor {
     const pdfBuffer = await readFile(filepath);
     const pdfData = await pdfParse(pdfBuffer);
 
-    const markdown = this.textToMarkdown(pdfData.text, 1);
+    // Sanitize text to remove invalid UTF-8 characters
+    const sanitizedText = sanitizeForPostgres(pdfData.text);
+    const markdown = this.textToMarkdown(sanitizedText, 1);
 
     return {
       filename,

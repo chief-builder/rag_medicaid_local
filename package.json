@@ -20,7 +20,8 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "download:pdfs": "./scripts/download-priority-docs.sh",
     "download:webpages": "tsx scripts/download-webpages.ts",
-    "download:all": "pnpm download:pdfs && pnpm download:webpages"
+    "download:all": "pnpm download:pdfs && pnpm download:webpages",
+    "reset:ingest": "./scripts/reset-and-ingest.sh"
   },
   "engines": {
     "node": ">=20.0.0"
