@@ -219,6 +219,109 @@
         "Social_Security": "1-800-772-1213",
         "Medicare": "1-800-633-4227"
       }
+    },
+    {
+      "filename": "PA-DHS-Healthy-Horizons.pdf",
+      "documentType": "general_eligibility",
+      "title": "Medicaid for Older People and People with Disabilities (Healthy Horizons)",
+      "description": "Official PA DHS page explaining Medicaid eligibility for seniors and disabled individuals",
+      "targetPrograms": ["Healthy_Horizons", "QMB", "SLMB"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "as_needed",
+      "sourceUrl": "https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/medicaid-older-people-and-people-with-disabilities",
+      "sourceOrg": "PA Department of Human Services",
+      "priority": 9,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Healthy Horizons program",
+        "Age 65+ eligibility",
+        "Disability eligibility",
+        "Income limits",
+        "Resource limits",
+        "Medicare cost sharing"
+      ],
+      "keyPhoneNumbers": {
+        "PA_Customer_Service": "1-877-395-8930"
+      }
+    },
+    {
+      "filename": "PA-DHS-Long-Term-Care.pdf",
+      "documentType": "ltc_info",
+      "title": "MA and Payment of Long-Term Care",
+      "description": "Official PA DHS page on nursing home Medicaid and spousal impoverishment protections",
+      "targetPrograms": ["Nursing_Home", "CHC_Waiver"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/medicaid-payment-long-term-care",
+      "sourceOrg": "PA Department of Human Services",
+      "priority": 10,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Nursing home Medicaid",
+        "Spousal impoverishment",
+        "Community spouse resource allowance",
+        "CSRA",
+        "MMMNA",
+        "Resource assessment",
+        "PA 1572 form"
+      ],
+      "spousalProtectionAmounts2025": {
+        "CSRA_minimum": "$31,584",
+        "CSRA_maximum": "$157,920",
+        "MMMNA": "$2,555"
+      },
+      "sensitiveTopicWarning": true,
+      "keyPhoneNumbers": {
+        "PA_Customer_Service": "1-877-395-8930"
+      }
+    },
+    {
+      "filename": "PA-DHS-Estate-Recovery-Info.pdf",
+      "documentType": "estate_recovery",
+      "title": "Estate Recovery Information Page",
+      "description": "Supplemental PA DHS page on estate recovery program details",
+      "targetPrograms": ["Nursing_Home", "CHC_Waiver"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "as_needed",
+      "sourceUrl": "https://www.pa.gov/agencies/dhs/resources/for-residents/estate-recovery",
+      "sourceOrg": "PA Department of Human Services",
+      "priority": 11,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Estate recovery",
+        "MERP",
+        "Probate",
+        "Hardship waiver",
+        "Liens"
+      ],
+      "sensitiveTopicWarning": true,
+      "recommendProfessional": "estate_planning",
+      "keyPhoneNumbers": {
+        "Estate_Recovery_Program": "717-772-6274"
+      }
+    },
+    {
+      "filename": "PA-Aging-PACE-Overview.pdf",
+      "documentType": "pace_pacenet",
+      "title": "PACE Program Overview",
+      "description": "PA Department of Aging overview of PACE/PACENET prescription assistance",
+      "targetPrograms": ["PACE", "PACENET"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.pa.gov/agencies/aging/aging-programs-and-services/pace-program",
+      "sourceOrg": "PA Department of Aging",
+      "priority": 12,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "PACE overview",
+        "PACENET overview",
+        "Eligibility",
+        "Prescription assistance",
+        "Lottery funded"
+      ],
+      "keyPhoneNumbers": {
+        "PACE_PACENET": "1-800-225-7223"
+      }
     }
   ],
   "webPagesToSave": [
