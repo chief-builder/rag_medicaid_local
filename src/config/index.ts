@@ -54,6 +54,7 @@ export function loadConfig(): Config {
     qdrant: {
       url: getEnvString('QDRANT_URL', 'http://localhost:6333'),
       collection: getEnvString('QDRANT_COLLECTION', 'medicaid_chunks'),
+      embeddingDimension: getEnvNumber('EMBEDDING_DIMENSION', 768),
     },
     postgres: {
       host: getEnvString('POSTGRES_HOST', 'localhost'),

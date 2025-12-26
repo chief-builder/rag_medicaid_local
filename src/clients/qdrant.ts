@@ -4,8 +4,6 @@ import { createChildLogger } from '../utils/logger.js';
 
 const logger = createChildLogger('qdrant');
 
-const EMBEDDING_DIMENSION = 768; // Default for nomic-embed-text
-
 export interface QdrantPayload {
   chunkId: string;
   documentId: string;
@@ -21,16 +19,19 @@ export interface QdrantPayload {
 export class QdrantStore {
   private client: QdrantClient;
   private collectionName: string;
+  private embeddingDimension: number;
 
   constructor(config: Config['qdrant']) {
     this.client = new QdrantClient({ url: config.url });
     this.collectionName = config.collection;
+    this.embeddingDimension = config.embeddingDimension;
   }
 
   /**
    * Initialize the collection if it doesn't exist
    */
-  async initialize(dimension: number = EMBEDDING_DIMENSION): Promise<void> {
+  async initialize(): Promise<void> {
+    const dimension = this.embeddingDimension;
     try {
       const collections = await this.client.getCollections();
       const exists = collections.collections.some(

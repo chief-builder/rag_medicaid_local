@@ -14,6 +14,7 @@ export const ConfigSchema = z.object({
   qdrant: z.object({
     url: z.string().url(),
     collection: z.string(),
+    embeddingDimension: z.number().min(64).max(4096),
   }),
   postgres: z.object({
     host: z.string(),
