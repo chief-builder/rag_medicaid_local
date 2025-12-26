@@ -34,6 +34,12 @@ coverage/
 # Data directories (large files)
 data/pdfs/
 data/markdown/
+data/raw/
+data/processed/
+data/embeddings/
+
+# Keep metadata (document registry)
+!data/metadata/
 
 # Cache
 .cache/

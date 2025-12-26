@@ -1,0 +1,328 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-01",
+  "description": "Priority documents for Senior-Focused Medicaid RAG System",
+  "documents": [
+    {
+      "filename": "PHLP-2025-MSP-Guide.pdf",
+      "documentType": "msp_guide",
+      "title": "PHLP 2025 Medicare Savings Programs Guide",
+      "description": "Comprehensive guide to QMB, SLMB, QI, and QDWI programs that help pay Medicare premiums",
+      "targetPrograms": ["QMB", "SLMB", "QI", "QDWI", "Extra_Help"],
+      "effectiveDate": "2025-02-01",
+      "updateFrequency": "annually_april",
+      "sourceUrl": "https://www.phlp.org/uploads/attachments/cm73cc2hheve0ovu8f4khws2a-2025-msp-guide-final.pdf",
+      "sourceOrg": "Pennsylvania Health Law Project",
+      "priority": 1,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Medicare premium assistance",
+        "QMB qualification",
+        "SLMB eligibility",
+        "QI program",
+        "Extra Help automatic enrollment",
+        "Income limits for MSP",
+        "Application process",
+        "COMPASS online application"
+      ],
+      "keyPhoneNumbers": {
+        "PHLP_Helpline": "1-800-274-3258",
+        "PA_Customer_Service": "1-877-395-8930"
+      }
+    },
+    {
+      "filename": "PHLP-CHC-Waiver-Eligibility-Guide.pdf",
+      "documentType": "chc_waiver",
+      "title": "Accessing the CHC Waiver - Eligibility Guide for Advocates",
+      "description": "Guide to Community HealthChoices waiver eligibility for home and community-based services",
+      "targetPrograms": ["CHC_Waiver"],
+      "effectiveDate": "2024-06-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.phlp.org/uploads/attachments/clyx3ht63zlfzgdu8qknzs8vt-accessing-the-chc-waiver-guide-to-eligibility-for-advocates.pdf",
+      "sourceOrg": "Pennsylvania Health Law Project",
+      "priority": 2,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Nursing facility level of care",
+        "Functional eligibility",
+        "Financial eligibility",
+        "Home care alternatives",
+        "Waiver services",
+        "Independent Enrollment Broker",
+        "PA 1768 form",
+        "Appeals process"
+      ],
+      "keyPhoneNumbers": {
+        "IEB": "1-877-550-4227",
+        "PHLP_Helpline": "1-800-274-3258"
+      }
+    },
+    {
+      "filename": "PHLP-2025-Income-Limits.pdf",
+      "documentType": "income_limits",
+      "title": "2025 Income and Resource Limits for Medicaid and Other Health Programs",
+      "description": "Comprehensive fact sheet with current income and resource limits for all PA Medicaid programs",
+      "targetPrograms": ["QMB", "SLMB", "QI", "QDWI", "CHC_Waiver", "Nursing_Home", "MAWD"],
+      "effectiveDate": "2025-01-17",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.phlp.org/uploads/attachments/cm6qkwrn0disdowu8htwgm8ql-2025-monthly-income-and-resource-limits-for-medicaid-and-other-health-programs.pdf",
+      "sourceOrg": "Pennsylvania Health Law Project",
+      "priority": 3,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "2025 Federal Poverty Levels",
+        "Monthly income limits",
+        "Resource limits",
+        "Spousal protection amounts",
+        "CSRA limits",
+        "MMMNA amounts"
+      ],
+      "annualUpdateNotes": {
+        "FPL_source": "Federal Register",
+        "FPL_typical_date": "January",
+        "MSP_effective": "Usually April",
+        "COLA_note": "Medicaid should not count COLAs until March"
+      }
+    },
+    {
+      "filename": "PA-DHS-Estate-Recovery-FAQ.pdf",
+      "documentType": "estate_recovery",
+      "title": "Medical Assistance Estate Recovery Program - Questions and Answers",
+      "description": "Official PA DHS brochure explaining estate recovery rules and exemptions",
+      "targetPrograms": ["Nursing_Home", "CHC_Waiver"],
+      "effectiveDate": "2024-01-01",
+      "updateFrequency": "as_needed",
+      "sourceUrl": "https://www.pa.gov/content/dam/copapwp-pagov/en/dhs/documents/services/other-services/estate-recovery/Estate%20Recovery%20Program%20Brochure%20(English).pdf",
+      "sourceOrg": "PA Department of Human Services",
+      "priority": 4,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Estate recovery rules",
+        "MERP program",
+        "Probate estate",
+        "Hardship waiver",
+        "Exempt property",
+        "Surviving spouse protections",
+        "Minor child exemption"
+      ],
+      "sensitiveTopicWarning": true,
+      "recommendProfessional": "estate_planning",
+      "keyPhoneNumbers": {
+        "Estate_Recovery_Program": "717-772-6274"
+      }
+    },
+    {
+      "filename": "PA-PACE-PACENET-Provider-Guide-2025.pdf",
+      "documentType": "pace_pacenet",
+      "title": "PACE and PACENET Provider Guide 2025",
+      "description": "Comprehensive guide to Pennsylvania's prescription assistance programs for seniors",
+      "targetPrograms": ["PACE", "PACENET"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.pa.gov/content/dam/copapwp-pagov/en/aging/documents/aging-programs-and-services/health-wellness/documents/pace%20provider%20guide%202025.pdf",
+      "sourceOrg": "PA Department of Aging",
+      "priority": 5,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Prescription drug assistance",
+        "PACE eligibility",
+        "PACENET eligibility",
+        "Income limits",
+        "Co-payment amounts",
+        "Part D integration",
+        "Lottery funded"
+      ],
+      "incomeGuidelines": {
+        "PACE_single": "$14,500 or less",
+        "PACE_married": "$17,700 or less",
+        "PACENET_single": "$14,501 to $33,500",
+        "PACENET_married": "$17,701 to $41,500"
+      },
+      "keyPhoneNumbers": {
+        "PACE_PACENET": "1-800-225-7223"
+      }
+    },
+    {
+      "filename": "PA-DHS-LIFE-Program.pdf",
+      "documentType": "life_program",
+      "title": "Living Independence for the Elderly (LIFE) Program",
+      "description": "Information about Pennsylvania's all-inclusive care program for nursing-home eligible seniors",
+      "targetPrograms": ["LIFE"],
+      "effectiveDate": "2024-01-01",
+      "updateFrequency": "as_needed",
+      "sourceUrl": "https://www.pa.gov/content/dam/copapwp-pagov/en/dhs/documents/healthchoices/hc-services/documents/PELife_English.pdf",
+      "sourceOrg": "PA Department of Human Services",
+      "priority": 6,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "All-inclusive care",
+        "PACE program",
+        "Day center services",
+        "Home care",
+        "Transportation",
+        "Prescription coverage",
+        "Nursing home alternative",
+        "Care team coordination"
+      ],
+      "keyPhoneNumbers": {
+        "IEB": "1-877-550-4227",
+        "CHC_Helpline": "1-844-824-3655"
+      }
+    },
+    {
+      "filename": "PHLP-Using-Medicare-Medicaid-Guide.pdf",
+      "documentType": "dual_eligible",
+      "title": "Using Your Medicare and Medicaid Insurance Coverages",
+      "description": "Guide for dual eligible beneficiaries on coordinating Medicare and Medicaid benefits",
+      "targetPrograms": ["QMB", "SLMB", "QI", "Extra_Help"],
+      "effectiveDate": "2024-10-01",
+      "updateFrequency": "annually_october",
+      "sourceUrl": "https://www.phlp.org/uploads/attachments/cm48ldzjkudkbgdu8kdaj36qm-using-medicare-and-medicaid-guide.pdf",
+      "sourceOrg": "Pennsylvania Health Law Project",
+      "priority": 7,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Dual eligibility",
+        "Medicare Part A",
+        "Medicare Part B",
+        "Medicare Part D",
+        "Medicaid coverage",
+        "Cost sharing",
+        "Provider billing"
+      ],
+      "keyPhoneNumbers": {
+        "PHLP_Helpline": "1-800-274-3258",
+        "Medicare": "1-800-633-4227"
+      }
+    },
+    {
+      "filename": "PHLP-2025-LIS-Extra-Help-Guide.pdf",
+      "documentType": "extra_help",
+      "title": "PHLP 2025 Low Income Subsidy (Extra Help) Guide",
+      "description": "Guide to Extra Help program that reduces Part D prescription drug costs",
+      "targetPrograms": ["Extra_Help"],
+      "effectiveDate": "2025-02-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.phlp.org/uploads/attachments/cm73ch5qdevfpovu8niv8a0ly-2025-lis-guide.pdf",
+      "sourceOrg": "Pennsylvania Health Law Project",
+      "priority": 8,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "Extra Help",
+        "Low Income Subsidy",
+        "Part D premium help",
+        "Drug cost reduction",
+        "Automatic qualification",
+        "Application process"
+      ],
+      "keyPhoneNumbers": {
+        "Social_Security": "1-800-772-1213",
+        "Medicare": "1-800-633-4227"
+      }
+    }
+  ],
+  "webPagesToSave": [
+    {
+      "suggestedFilename": "PA-DHS-Healthy-Horizons.pdf",
+      "documentType": "general_eligibility",
+      "title": "Medicaid for Older People and People with Disabilities",
+      "url": "https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/medicaid-older-people-and-people-with-disabilities",
+      "sourceOrg": "PA Department of Human Services",
+      "instructions": "Save as PDF from browser (Ctrl+P -> Save as PDF)"
+    },
+    {
+      "suggestedFilename": "PA-DHS-Long-Term-Care.pdf",
+      "documentType": "ltc_info",
+      "title": "MA and Payment of Long-Term Care",
+      "url": "https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/medicaid-payment-long-term-care",
+      "sourceOrg": "PA Department of Human Services",
+      "instructions": "Save as PDF from browser - contains spousal impoverishment rules"
+    },
+    {
+      "suggestedFilename": "PA-DHS-Estate-Recovery-Info.pdf",
+      "documentType": "estate_recovery",
+      "title": "Estate Recovery Information Page",
+      "url": "https://www.pa.gov/agencies/dhs/resources/for-residents/estate-recovery",
+      "sourceOrg": "PA Department of Human Services",
+      "instructions": "Save as PDF from browser - complements the FAQ brochure"
+    },
+    {
+      "suggestedFilename": "PA-Aging-PACE-Overview.pdf",
+      "documentType": "pace_pacenet",
+      "title": "PACE Program Overview",
+      "url": "https://www.pa.gov/agencies/aging/aging-programs-and-services/pace-program",
+      "sourceOrg": "PA Department of Aging",
+      "instructions": "Save as PDF from browser - general PACE/PACENET overview"
+    }
+  ],
+  "dataFreshnessRules": [
+    {
+      "dataType": "federal_poverty_level",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "Federal Register",
+      "sourceUrl": "https://aspe.hhs.gov/poverty-guidelines"
+    },
+    {
+      "dataType": "msp_income_limits",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 4,
+      "sourceName": "CMS/PHLP"
+    },
+    {
+      "dataType": "nursing_home_fbr",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "Social Security Administration",
+      "sourceUrl": "https://www.ssa.gov/oact/cola/SSI.html"
+    },
+    {
+      "dataType": "spousal_protection_amounts",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "CMS",
+      "note": "CSRA and MMMNA amounts"
+    },
+    {
+      "dataType": "part_d_costs",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 10,
+      "sourceName": "Medicare.gov",
+      "sourceUrl": "https://www.medicare.gov/drug-coverage-part-d"
+    },
+    {
+      "dataType": "pace_pacenet_limits",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "PA Department of Aging",
+      "sourceUrl": "https://www.pa.gov/agencies/aging"
+    },
+    {
+      "dataType": "chester_county_contacts",
+      "updateFrequency": "quarterly",
+      "sourceName": "County websites",
+      "contacts": {
+        "Chester_County_CAO": "610-466-1000",
+        "APPRISE": "610-344-6350",
+        "PA_MEDI_Helpline": "1-800-783-7067"
+      }
+    }
+  ],
+  "chesterCountyResources": {
+    "countyAssistanceOffice": {
+      "name": "Chester County Assistance Office",
+      "phone": "610-466-1000",
+      "address": "201 W. Market St, West Chester, PA 19380"
+    },
+    "apprise": {
+      "name": "APPRISE (Medicare Counseling)",
+      "phone": "610-344-6350",
+      "description": "Free Medicare counseling through Chester County Department of Aging"
+    },
+    "areaAgencyOnAging": {
+      "name": "Chester County Department of Aging Services",
+      "phone": "610-344-6350",
+      "website": "https://www.chesco.org/aging"
+    }
+  }
+}
