@@ -111,5 +111,5 @@ export function resetGuardrailsEngine(): void {
   guardrailsInstance = null;
 }
 
-export { SensitiveCategory } from './detector.js';
+export type { SensitiveCategory } from './detector.js';
 export { detectSensitiveTopic } from './detector.js';
