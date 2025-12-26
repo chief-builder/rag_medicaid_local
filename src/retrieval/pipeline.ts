@@ -14,6 +14,7 @@ import { QdrantStore, getQdrantStore } from '../clients/qdrant.js';
 import { PostgresStore, getPostgresStore } from '../clients/postgres.js';
 import { fuseResults, deduplicateResults } from './fusion.js';
 import { Reranker, createReranker } from './reranker.js';
+import { GuardrailsEngine, getGuardrailsEngine, GuardrailResult } from '../guardrails/index.js';
 import { v4 as uuid } from 'uuid';
 
 const logger = createChildLogger('retrieval-pipeline');
@@ -27,6 +28,7 @@ export class RetrievalPipeline {
   private qdrant: QdrantStore;
   private postgres: PostgresStore;
   private reranker: Reranker;
+  private guardrails: GuardrailsEngine;
 
   constructor(config: Config) {
     this.config = config;
@@ -34,6 +36,7 @@ export class RetrievalPipeline {
     this.qdrant = getQdrantStore(config.qdrant);
     this.postgres = getPostgresStore(config.postgres);
     this.reranker = createReranker(this.lmStudio);
+    this.guardrails = getGuardrailsEngine();
   }
 
   /**
@@ -45,11 +48,24 @@ export class RetrievalPipeline {
 
     logger.info({ queryId, query }, 'Processing query');
 
+    // Check for sensitive topics (guardrails)
+    const guardrailResult = await this.guardrails.checkQuery(query);
+    if (guardrailResult.isSensitive) {
+      logger.info(
+        { queryId, category: guardrailResult.category },
+        'Sensitive topic detected'
+      );
+    }
+
     // Check cache if enabled
     if (this.config.cache.enabled && options?.useCache !== false) {
       const cached = await this.checkCache(query);
       if (cached) {
         logger.info({ queryId }, 'Cache hit');
+        // Apply guardrails to cached response too
+        if (guardrailResult.disclaimerRequired) {
+          return this.applyGuardrails(cached, guardrailResult);
+        }
         return cached;
       }
     }
@@ -88,7 +104,7 @@ export class RetrievalPipeline {
 
     // Build response
     const latencyMs = Date.now() - startTime;
-    const response: QueryResponse = {
+    let response: QueryResponse = {
       answer: answerResult.answer,
       citations: answerResult.citations,
       confidence: answerResult.confidence,
@@ -103,7 +119,12 @@ export class RetrievalPipeline {
       },
     };
 
-    // Cache the response
+    // Apply guardrails (add disclaimers for sensitive topics)
+    if (guardrailResult.disclaimerRequired) {
+      response = this.applyGuardrails(response, guardrailResult);
+    }
+
+    // Cache the response (without guardrails, they'll be reapplied on retrieval)
     if (this.config.cache.enabled) {
       await this.cacheResponse(query, response);
     }
@@ -270,6 +291,35 @@ export class RetrievalPipeline {
     noAnswerRate: number;
   }> {
     return this.postgres.getQueryMetrics();
+  }
+
+  /**
+   * Apply guardrails to a response (add disclaimers for sensitive topics)
+   */
+  private applyGuardrails(
+    response: QueryResponse,
+    guardrailResult: GuardrailResult
+  ): QueryResponse {
+    if (!guardrailResult.disclaimerRequired || !guardrailResult.disclaimer) {
+      return response;
+    }
+
+    // Append disclaimer to the answer
+    let wrappedAnswer = response.answer;
+
+    // Add disclaimer section
+    wrappedAnswer += '\n\n---\n';
+    wrappedAnswer += `**Important Notice:** ${guardrailResult.disclaimer}`;
+
+    // Add referral if available
+    if (guardrailResult.referral) {
+      wrappedAnswer += `\n\n**For Professional Help:** ${guardrailResult.referral}`;
+    }
+
+    return {
+      ...response,
+      answer: wrappedAnswer,
+    };
   }
 }
 
