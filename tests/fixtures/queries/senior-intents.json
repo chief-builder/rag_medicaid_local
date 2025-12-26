@@ -1,0 +1,116 @@
+{
+  "queries": [
+    {
+      "id": "medicare-cost-help",
+      "intent": "Am I eligible for help with Medicare costs?",
+      "variations": [
+        "My mother is 72 and gets $1,400/month from Social Security. Can she get help with her Medicare premium?",
+        "Can someone on Social Security get help paying for Medicare?",
+        "What programs help pay Medicare premiums?"
+      ],
+      "expectedPrograms": ["QMB", "SLMB", "QI", "Extra Help"],
+      "expectedDocTypes": ["msp_guide", "income_limits"],
+      "sensitiveCategory": null
+    },
+    {
+      "id": "nursing-home-spouse",
+      "intent": "How can I get help paying for nursing home care?",
+      "variations": [
+        "My dad needs nursing home care. Will my mom lose her house?",
+        "Can my spouse keep our home if I go to a nursing home?",
+        "What assets are protected when one spouse needs nursing care?"
+      ],
+      "expectedTopics": ["spousal impoverishment", "exempt assets", "CSRA"],
+      "expectedDocTypes": ["ltc_info"],
+      "sensitiveCategory": null
+    },
+    {
+      "id": "asset-protection",
+      "intent": "Can I keep my house if I need Medicaid?",
+      "variations": [
+        "Will Medicaid take my house?",
+        "Is my home protected from Medicaid?"
+      ],
+      "expectedTopics": ["home exemption", "estate recovery"],
+      "expectedDocTypes": ["estate_recovery", "ltc_info"],
+      "sensitiveCategory": "estate_planning"
+    },
+    {
+      "id": "medicare-medicaid-difference",
+      "intent": "What's the difference between Medicare and Medicaid?",
+      "variations": [
+        "Medicare vs Medicaid - what's the difference?",
+        "Is Medicare the same as Medicaid?"
+      ],
+      "expectedTopics": ["Medicare", "Medicaid", "dual eligible"],
+      "expectedDocTypes": ["general_eligibility"],
+      "sensitiveCategory": null
+    },
+    {
+      "id": "apply-for-program",
+      "intent": "How do I apply for [specific program]?",
+      "variations": [
+        "How do I apply for SLMB?",
+        "Where can I apply for Extra Help?",
+        "How to apply for Medicaid nursing home coverage"
+      ],
+      "expectedInfo": ["COMPASS", "CAO phone", "1-800 numbers"],
+      "sensitiveCategory": null
+    },
+    {
+      "id": "estate-recovery",
+      "intent": "What happens to my assets when I die?",
+      "variations": [
+        "Will Medicaid take my estate?",
+        "Can my children inherit my house if I was on Medicaid?"
+      ],
+      "expectedTopics": ["estate recovery", "MERP", "hardship waiver"],
+      "expectedDocTypes": ["estate_recovery"],
+      "sensitiveCategory": "estate_planning"
+    },
+    {
+      "id": "spousal-protection",
+      "intent": "My spouse needs care - will I lose everything?",
+      "variations": [
+        "What can I keep if my husband needs nursing home?",
+        "How much money can the community spouse keep?"
+      ],
+      "expectedTopics": ["CSRA", "MMMNA", "spousal impoverishment"],
+      "expectedDocTypes": ["ltc_info"],
+      "sensitiveCategory": "spousal_complex"
+    },
+    {
+      "id": "medicare-help-resources",
+      "intent": "Where can I get free help with Medicare questions?",
+      "variations": [
+        "Is there free Medicare counseling?",
+        "Who can help me understand Medicare?"
+      ],
+      "expectedInfo": ["APPRISE", "SHIP", "PHLP"],
+      "sensitiveCategory": null
+    },
+    {
+      "id": "prescription-drug-help",
+      "intent": "What prescription drug help is available?",
+      "variations": [
+        "How can I get help paying for medications?",
+        "What is PACE/PACENET?"
+      ],
+      "expectedPrograms": ["Extra Help", "PACE", "PACENET"],
+      "expectedDocTypes": ["pace_pacenet"],
+      "sensitiveCategory": null
+    },
+    {
+      "id": "home-care-alternatives",
+      "intent": "Can I get care at home instead of a nursing home?",
+      "variations": [
+        "What is LIFE program?",
+        "Are there alternatives to nursing homes?",
+        "What is CHC waiver?"
+      ],
+      "expectedPrograms": ["LIFE", "CHC_Waiver"],
+      "expectedDocTypes": ["life_program", "chc_waiver"],
+      "sensitiveCategory": null
+    }
+  ]
+}
