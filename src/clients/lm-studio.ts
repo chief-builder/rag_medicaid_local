@@ -29,13 +29,15 @@ export class LMStudioClient {
       const response = await this.client.embeddings.create({
         model: this.config.embeddingModel,
         input: text,
+        encoding_format: 'float', // Force float format to avoid base64 decoding issues
       });
 
       const embedding = response.data[0].embedding;
 
-      logger.debug(
-        { dimensions: embedding.length },
-        'Embedding generated successfully'
+      // Log dimensions at INFO level to debug dimension issues
+      logger.info(
+        { dimensions: embedding.length, model: this.config.embeddingModel },
+        'Embedding generated'
       );
 
       return {
@@ -59,7 +61,16 @@ export class LMStudioClient {
       const response = await this.client.embeddings.create({
         model: this.config.embeddingModel,
         input: texts,
+        encoding_format: 'float', // Force float format to avoid base64 decoding issues
       });
+
+      // Log dimensions of first embedding at INFO level
+      if (response.data.length > 0) {
+        logger.info(
+          { dimensions: response.data[0].embedding.length, count: response.data.length },
+          'Batch embeddings generated'
+        );
+      }
 
       return response.data.map((item, index) => ({
         embedding: item.embedding,
