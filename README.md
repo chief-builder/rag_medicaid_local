@@ -87,10 +87,11 @@ A fully local, open-source Retrieval-Augmented Generation (RAG) system for Penns
 - Node.js 20+
 - pnpm
 - Docker & Docker Compose
+- Poppler (for PDF processing): `brew install poppler` (macOS) or `apt install poppler-utils` (Linux)
 - [LM Studio](https://lmstudio.ai/) with the following models loaded:
   - `text-embedding-nomic-embed-text-v1.5` (Embeddings - 768 dimensions)
   - `qwen2.5-vl-7b-instruct` (LLM for answers and reranking)
-  - `allenai/olmocr-2-7b` (OCR for PDF processing - optional, only needed for ingestion)
+  - `allenai/olmocr-2-7b` (OCR for scanned PDFs - optional, only needed for image-based PDFs)
 
 ## Quick Start
 
@@ -411,7 +412,10 @@ pnpm docker:down && pnpm docker:up
 - Ensure PDFs are valid and not password-protected
 - Check available disk space
 - Verify LM Studio has enough memory for the models
-- For OCR issues, ensure `allenai/olmocr-2-7b` is loaded
+- For OCR issues with scanned PDFs:
+  - Ensure poppler is installed: `brew install poppler` (macOS) or `apt install poppler-utils` (Linux)
+  - Ensure `allenai/olmocr-2-7b` is loaded in LM Studio
+  - OCR takes ~25 seconds per page on a 7B model
 
 ## License
 
