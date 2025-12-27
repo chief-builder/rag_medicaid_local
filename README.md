@@ -1,6 +1,47 @@
 # Medicaid RAG System
 
+> **Clear answers for families navigating Medicaid—when it matters most.**
+
 A fully local, open-source Retrieval-Augmented Generation (RAG) system for Pennsylvania Medicaid eligibility information, with a focus on helping seniors and their families. Built with TypeScript, LM Studio, Qdrant, and PostgreSQL.
+
+## Why This Project?
+
+**Helping Pennsylvania Seniors Navigate Medicaid With Clarity and Confidence**
+
+Applying for Medicaid long-term care can be overwhelming. Seniors and their families often face complex questions about eligibility, income and asset rules, estate recovery, and long-term care options—frequently during moments of stress or medical transition.
+
+This project provides a **private, locally run assistant** designed to help users understand Pennsylvania Medicaid policies using official, publicly available state guidance.
+
+### What This Tool Does
+
+- **Explains Medicaid rules in plain language**
+  Converts complex policy language from Pennsylvania DHS materials into clear, understandable explanations.
+
+- **Provides source-linked answers**
+  Every response is grounded in official documentation, with citations so users can verify information or share it with caseworkers, attorneys, or care coordinators.
+
+- **Handles sensitive topics responsibly**
+  When topics involve asset transfers, estate recovery, or eligibility planning, the system provides factual context and clearly encourages consultation with qualified professionals such as elder law attorneys or legal aid organizations.
+
+- **Protects privacy by design**
+  The assistant runs entirely on the user's local machine. No personal data, questions, or documents are sent to external servers.
+
+### Who This Is For
+
+- **Seniors** exploring long-term care and Medicaid eligibility
+- **Adult children or caregivers** helping parents or loved ones navigate the system
+- **Care coordinators and advocates** looking for fast, accurate references
+- **Anyone** seeking reliable, source-backed Medicaid information for Pennsylvania
+
+### What This Tool Does Not Do
+
+This system **does not provide legal, financial, or medical advice**.
+It does not make eligibility determinations or replace professional judgment.
+
+Instead, it equips users with accurate information so they can:
+- Ask better questions
+- Understand official guidance
+- Have informed conversations with caseworkers, attorneys, or healthcare professionals
 
 ## Features
 
