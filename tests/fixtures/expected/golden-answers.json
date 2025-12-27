@@ -1,0 +1,54 @@
+{
+  "goldenAnswers": [
+    {
+      "queryId": "medicare-cost-help-1",
+      "query": "My mother is 72 and gets $1,400/month from Social Security. Can she get help with her Medicare premium?",
+      "expectedAnswer": {
+        "mustContain": ["SLMB", "Part B premium"],
+        "shouldContain": ["Medicare Savings Program", "Extra Help", "COMPASS"],
+        "mustNotContain": ["I cannot find"],
+        "citationCount": { "min": 1, "max": 5 }
+      }
+    },
+    {
+      "queryId": "nursing-home-spouse-1",
+      "query": "My dad needs nursing home care. Will my mom lose her house?",
+      "expectedAnswer": {
+        "mustContain": ["home", "exempt", "protected"],
+        "shouldContain": ["spousal", "community spouse"],
+        "mustNotContain": ["lose her house", "must sell"],
+        "citationCount": { "min": 1, "max": 4 }
+      }
+    },
+    {
+      "queryId": "life-program-1",
+      "query": "What is the LIFE program and is it right for my 80-year-old father?",
+      "expectedAnswer": {
+        "mustContain": ["LIFE", "elderly"],
+        "shouldContain": ["care", "services", "home"],
+        "mustNotContain": ["I cannot find"],
+        "citationCount": { "min": 1, "max": 3 }
+      }
+    },
+    {
+      "queryId": "prescription-help-1",
+      "query": "How can I get help paying for my medications?",
+      "expectedAnswer": {
+        "mustContain": ["prescription", "drug"],
+        "shouldContain": ["Extra Help", "PACE", "PACENET"],
+        "mustNotContain": ["I cannot find"],
+        "citationCount": { "min": 1, "max": 4 }
+      }
+    },
+    {
+      "queryId": "chc-waiver-1",
+      "query": "What is the CHC waiver and how do I qualify?",
+      "expectedAnswer": {
+        "mustContain": ["Community HealthChoices", "waiver"],
+        "shouldContain": ["home", "care", "services"],
+        "mustNotContain": ["I cannot find"],
+        "citationCount": { "min": 1, "max": 3 }
+      }
+    }
+  ]
+}
