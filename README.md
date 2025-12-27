@@ -150,6 +150,16 @@ A fully local, open-source Retrieval-Augmented Generation (RAG) system for Penns
 | Rerank | `qwen2.5-vl-7b-instruct` | Listwise relevance reranking |
 | Answer | `qwen2.5-vl-7b-instruct` | Generate grounded answer with citations |
 
+### Model Summary
+
+| Step | Model | Purpose |
+|------|-------|---------|
+| PDF OCR | `allenai/olmocr-2-7b` (optional) | Convert scanned PDF pages to markdown |
+| Embed (Ingestion) | `nomic-embed-text-v1.5` | Convert chunks to 768-dim vectors |
+| Embed (Query) | `nomic-embed-text-v1.5` | Convert query to 768-dim vector |
+| Rerank | `qwen2.5-vl-7b-instruct` | Listwise relevance reranking |
+| Answer | `qwen2.5-vl-7b-instruct` | Generate grounded answer with citations |
+
 ## Prerequisites
 
 - Node.js 20+
@@ -373,6 +383,7 @@ GET /metrics
 | `EMBEDDING_DIMENSION` | `768` | Embedding vector dimension (must match model) |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
 | `QDRANT_COLLECTION` | `medicaid_chunks` | Qdrant collection name |
+| `EMBEDDING_DIMENSION` | `768` | Embedding vector dimension (must match model) |
 | `POSTGRES_HOST` | `localhost` | PostgreSQL host |
 | `POSTGRES_PORT` | `5432` | PostgreSQL port |
 | `POSTGRES_DB` | `medicaid_rag` | Database name |
