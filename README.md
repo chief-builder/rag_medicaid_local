@@ -38,49 +38,106 @@ A fully local, open-source Retrieval-Augmented Generation (RAG) system for Penns
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           OFFLINE / INGESTION                               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐              │
-│  │  PDFs   │───▶│ PDF→MD   │───▶│ Chunker  │───▶│  Embed    │              │
-│  │         │    │ (olmocr) │    │          │    │           │              │
-│  └─────────┘    └──────────┘    └────┬─────┘    └─────┬─────┘              │
-│                                      │                │                     │
-│                                      ▼                ▼                     │
-│                               ┌──────────┐     ┌──────────┐                │
-│                               │ Postgres │     │  Qdrant  │                │
-│                               │  (BM25)  │     │ (Vector) │                │
-│                               └──────────┘     └──────────┘                │
-└─────────────────────────────────────────────────────────────────────────────┘
+### Ingestion Pipeline (Offline)
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            ONLINE / QUERY                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐              │
-│  │  User   │───▶│Guardrails│───▶│  Embed   │───▶│  Hybrid   │              │
-│  │  Query  │    │  Check   │    │  Query   │    │  Search   │              │
-│  └─────────┘    └────┬─────┘    └──────────┘    └─────┬─────┘              │
-│                      │                                │                     │
-│                      │    ┌──────────┐    ┌──────────┤                     │
-│                      │    │   RRF    │◀───│  Vector  │                     │
-│                      │    │  Fusion  │    │  + BM25  │                     │
-│                      │    └────┬─────┘    └──────────┘                     │
-│                      │         │                                            │
-│                      │         ▼                                            │
-│                      │    ┌──────────┐                                     │
-│                      │    │  Rerank  │                                     │
-│                      │    │  (LLM)   │                                     │
-│                      │    └────┬─────┘                                     │
-│                      │         │                                            │
-│                      │         ▼                                            │
-│                      │    ┌──────────┐    ┌───────────┐                    │
-│                      └───▶│  Answer  │───▶│  Answer + │                    │
-│                           │  (LLM)   │    │ Disclaimer│                    │
-│                           └──────────┘    └───────────┘                    │
-└─────────────────────────────────────────────────────────────────────────────┘
 ```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  INGESTION PIPELINE                                                              │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌─────────┐    ┌─────────────────┐    ┌──────────┐    ┌─────────────────────┐  │
+│  │  PDFs   │───▶│    PDF → MD     │───▶│ Chunker  │───▶│   Embed Chunks      │  │
+│  │         │    │                 │    │          │    │                     │  │
+│  └─────────┘    │  Native text?   │    │ 512 char │    │ ┌─────────────────┐ │  │
+│                 │  ├─Yes: pdf-parse│    │ + overlap│    │ │ EMBEDDING MODEL │ │  │
+│                 │  └─No:  OCR ────┼────┼──────────┼────┼─┤ nomic-embed-text│ │  │
+│                 │        ▼        │    │          │    │ │ (768 dimensions)│ │  │
+│                 │  ┌───────────┐  │    └────┬─────┘    │ └─────────────────┘ │  │
+│                 │  │ OCR MODEL │  │         │          └──────────┬──────────┘  │
+│                 │  │ olmocr-2  │  │         │                     │             │
+│                 │  │ (vision)  │  │         ▼                     ▼             │
+│                 │  └───────────┘  │   ┌──────────┐          ┌──────────┐        │
+│                 └─────────────────┘   │ Postgres │          │  Qdrant  │        │
+│                                       │  (BM25)  │          │ (Vector) │        │
+│                                       │  chunks  │          │  768-dim │        │
+│                                       └──────────┘          └──────────┘        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Query Pipeline (Online)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  QUERY PIPELINE                                                                  │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌─────────┐    ┌─────────────────┐    ┌─────────────────────┐                  │
+│  │  User   │───▶│ 1. GUARDRAILS   │───▶│ 2. EMBED QUERY      │                  │
+│  │  Query  │    │    [No Model]   │    │                     │                  │
+│  └─────────┘    │ Keyword matching│    │ ┌─────────────────┐ │                  │
+│                 │ Detects:        │    │ │ EMBEDDING MODEL │ │                  │
+│                 │ • estate_plan   │    │ │ nomic-embed-text│ │                  │
+│                 │ • asset_transfer│    │ │ (768 dimensions)│ │                  │
+│                 │ • spend_down    │    │ └─────────────────┘ │                  │
+│                 │ • appeals       │    └──────────┬──────────┘                  │
+│                 └────────┬────────┘               │                             │
+│                          │                        ▼                             │
+│                          │         ┌─────────────────────────────┐              │
+│                          │         │ 3. HYBRID SEARCH [No Model] │              │
+│                          │         │ ┌───────────┬─────────────┐ │              │
+│                          │         │ │  Qdrant   │  Postgres   │ │              │
+│                          │         │ │  Vector   │    BM25     │ │              │
+│                          │         │ │  (top 20) │   (top 20)  │ │              │
+│                          │         │ └───────────┴─────────────┘ │              │
+│                          │         └─────────────┬───────────────┘              │
+│                          │                       ▼                              │
+│                          │         ┌─────────────────────────────┐              │
+│                          │         │ 4. RRF FUSION    [No Model] │              │
+│                          │         │ Reciprocal Rank Fusion      │              │
+│                          │         │ Combines & deduplicates     │              │
+│                          │         └─────────────┬───────────────┘              │
+│                          │                       ▼                              │
+│                          │         ┌─────────────────────────────┐              │
+│                          │         │ 5. RERANK                   │              │
+│                          │         │ ┌─────────────────────────┐ │              │
+│                          │         │ │      LLM MODEL          │ │              │
+│                          │         │ │  qwen2.5-vl-7b-instruct │ │              │
+│                          │         │ │  Listwise reranking     │ │              │
+│                          │         │ └─────────────────────────┘ │              │
+│                          │         └─────────────┬───────────────┘              │
+│                          │                       ▼                              │
+│                          │         ┌─────────────────────────────┐              │
+│                          │         │ 6. ANSWER GENERATION        │              │
+│                          │         │ ┌─────────────────────────┐ │              │
+│                          │         │ │      LLM MODEL          │ │              │
+│                          │         │ │  qwen2.5-vl-7b-instruct │ │              │
+│                          │         │ │  Grounded answer with   │ │              │
+│                          │         │ │  [N] citations          │ │              │
+│                          │         │ └─────────────────────────┘ │              │
+│                          │         └─────────────┬───────────────┘              │
+│                          │                       ▼                              │
+│                          │         ┌─────────────────────────────┐              │
+│                          └────────▶│ 7. APPLY GUARDRAILS         │              │
+│                                    │    [No Model]               │              │
+│                  If sensitive ────▶│ + Disclaimer                │              │
+│                                    │ + Professional referral     │              │
+│                                    └─────────────┬───────────────┘              │
+│                                                  ▼                              │
+│                                    ┌─────────────────────────────┐              │
+│                                    │      FINAL RESPONSE         │              │
+│                                    └─────────────────────────────┘              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Model Summary
+
+| Step | Model | Purpose |
+|------|-------|---------|
+| PDF OCR | `allenai/olmocr-2-7b` (optional) | Convert scanned PDF pages to markdown |
+| Embed (Ingestion) | `nomic-embed-text-v1.5` | Convert chunks to 768-dim vectors |
+| Embed (Query) | `nomic-embed-text-v1.5` | Convert query to 768-dim vector |
+| Rerank | `qwen2.5-vl-7b-instruct` | Listwise relevance reranking |
+| Answer | `qwen2.5-vl-7b-instruct` | Generate grounded answer with citations |
 
 ## Prerequisites
 
@@ -92,6 +149,35 @@ A fully local, open-source Retrieval-Augmented Generation (RAG) system for Penns
   - `text-embedding-nomic-embed-text-v1.5` (Embeddings - 768 dimensions)
   - `qwen2.5-vl-7b-instruct` (LLM for answers and reranking)
   - `allenai/olmocr-2-7b` (OCR for scanned PDFs - optional, only needed for image-based PDFs)
+
+## Model Usage
+
+The system uses three specialized models for different tasks in the pipeline:
+
+### Embedding Model (`text-embedding-nomic-embed-text-v1.5`)
+**Required** - Used for all vector search operations.
+
+| Stage | Usage |
+|-------|-------|
+| Ingestion | Converts each document chunk into a 768-dimension vector stored in Qdrant |
+| Query | Converts the user's question into a vector for similarity search |
+
+### LLM Model (`qwen2.5-vl-7b-instruct`)
+**Required** - Used for intelligent processing of search results.
+
+| Stage | Usage |
+|-------|-------|
+| Reranking | Listwise reranking of hybrid search results to improve relevance ordering |
+| Answer Generation | Generates grounded answers with citations from retrieved context |
+
+### OCR Model (`allenai/olmocr-2-7b`)
+**Optional** - Only needed when ingesting scanned/image-based PDFs.
+
+| Stage | Usage |
+|-------|-------|
+| PDF Ingestion | Converts page images to markdown text using vision capabilities |
+
+The system automatically detects whether a PDF contains extractable text or requires OCR. If native text extraction yields fewer than 50 characters, it falls back to OCR processing (~25 seconds per page).
 
 ## Quick Start
 
@@ -126,7 +212,7 @@ pnpm db:migrate
 2. Search for and download these models:
    - `nomic-ai/nomic-embed-text-v1.5-GGUF` (embeddings)
    - `Qwen/Qwen2.5-VL-7B-Instruct-GGUF` (LLM)
-   - `allenai/olmocr-2-7b` (OCR - only if ingesting new PDFs)
+   - `allenai/olmocr-2-7b` (OCR - only if ingesting scanned PDFs)
 3. Load the embedding model and LLM model
 4. Start the local server (default: http://localhost:1234)
 5. Verify models are loaded:
@@ -270,9 +356,10 @@ GET /metrics
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LM_STUDIO_BASE_URL` | `http://localhost:1234/v1` | LM Studio API URL |
-| `LM_STUDIO_OCR_MODEL` | `allenai/olmocr-2-7b` | OCR model name |
-| `LM_STUDIO_LLM_MODEL` | `qwen2.5-vl-7b-instruct` | LLM model name |
+| `LM_STUDIO_OCR_MODEL` | `allenai/olmocr-2-7b` | OCR model for scanned PDFs |
+| `LM_STUDIO_LLM_MODEL` | `qwen2.5-vl-7b-instruct` | LLM for answers and reranking |
 | `LM_STUDIO_EMBEDDING_MODEL` | `text-embedding-nomic-embed-text-v1.5` | Embedding model |
+| `EMBEDDING_DIMENSION` | `768` | Embedding vector dimension (must match model) |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
 | `QDRANT_COLLECTION` | `medicaid_chunks` | Qdrant collection name |
 | `EMBEDDING_DIMENSION` | `768` | Embedding vector dimension (must match model) |
