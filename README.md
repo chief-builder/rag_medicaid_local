@@ -1,6 +1,40 @@
 # Medicaid RAG System
 
-A fully local, open-source Retrieval-Augmented Generation (RAG) system for Medicaid eligibility information. Built with TypeScript, LM Studio, Qdrant, and PostgreSQL.
+A fully local, open-source Retrieval-Augmented Generation (RAG) system for Pennsylvania Medicaid eligibility information, with a focus on helping seniors and their families. Built with TypeScript, LM Studio, Qdrant, and PostgreSQL.
+
+## Features
+
+### Core RAG Capabilities
+- **PDF Ingestion**: Convert Medicaid PDFs to Markdown using OCR
+- **Hybrid Search**: Combine vector similarity (Qdrant) with BM25 (PostgreSQL)
+- **RRF Fusion**: Reciprocal Rank Fusion for optimal result merging
+- **LLM Reranking**: Listwise reranking using local LLM
+- **Grounded Answers**: Responses with document/page/chunk citations
+- **Caching**: Embedding and query result caching
+- **Metrics**: Query logging and performance tracking
+
+### Senior-Focused Enhancements
+- **Guardrails for Sensitive Topics**: Automatic detection and disclaimers for:
+  - Estate planning questions
+  - Asset transfer inquiries (5-year look-back period)
+  - Spend-down strategies
+  - Complex spousal situations
+  - Appeals and denials
+- **Professional Referrals**: Automatic inclusion of help resources:
+  - PHLP (Pennsylvania Health Law Project): 1-800-274-3258
+  - Elder Law Attorney referrals: 1-800-932-0311
+  - Pennsylvania Legal Aid Network: 1-800-322-7572
+- **Chester County Resources**: Local CAO and APPRISE contact information
+- **Data Freshness Tracking**: Warnings for outdated FPL, MSP limits, and other data
+
+### Ingested Documents (12 PDFs, 480 chunks)
+- PHLP 2025 MSP Guide (Medicare Savings Programs)
+- PHLP 2025 Income Limits
+- PA DHS Long-Term Care Information
+- PA DHS Estate Recovery FAQ
+- PA DHS LIFE Program Materials
+- PA DHS Healthy Horizons
+- And more Pennsylvania Medicaid resources
 
 ## Architecture
 
@@ -19,53 +53,34 @@ A fully local, open-source Retrieval-Augmented Generation (RAG) system for Medic
 │                               │ Postgres │     │  Qdrant  │                │
 │                               │  (BM25)  │     │ (Vector) │                │
 │                               └──────────┘     └──────────┘                │
-│                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            ONLINE / QUERY                                   │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
 │  ┌─────────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐              │
-│  │  User   │───▶│  Query   │───▶│  Embed   │───▶│  Vector   │              │
-│  │         │    │   API    │    │  Query   │    │  Search   │              │
+│  │  User   │───▶│Guardrails│───▶│  Embed   │───▶│  Hybrid   │              │
+│  │  Query  │    │  Check   │    │  Query   │    │  Search   │              │
 │  └─────────┘    └────┬─────┘    └──────────┘    └─────┬─────┘              │
 │                      │                                │                     │
-│                      │          ┌──────────┐          │                     │
-│                      └─────────▶│   BM25   │◀─────────┘                     │
-│                                 │  Search  │                                │
-│                                 └────┬─────┘                                │
-│                                      │                                      │
-│                                      ▼                                      │
-│                               ┌──────────┐                                 │
-│                               │   RRF    │                                 │
-│                               │  Fusion  │                                 │
-│                               └────┬─────┘                                 │
-│                                    │                                        │
-│                                    ▼                                        │
-│                               ┌──────────┐                                 │
-│                               │  Rerank  │                                 │
-│                               │  (LLM)   │                                 │
-│                               └────┬─────┘                                 │
-│                                    │                                        │
-│                                    ▼                                        │
-│                               ┌──────────┐    ┌───────────┐                │
-│                               │  Answer  │───▶│  Answer + │                │
-│                               │  (LLM)   │    │ Citations │                │
-│                               └──────────┘    └───────────┘                │
-│                                                                             │
+│                      │    ┌──────────┐    ┌──────────┤                     │
+│                      │    │   RRF    │◀───│  Vector  │                     │
+│                      │    │  Fusion  │    │  + BM25  │                     │
+│                      │    └────┬─────┘    └──────────┘                     │
+│                      │         │                                            │
+│                      │         ▼                                            │
+│                      │    ┌──────────┐                                     │
+│                      │    │  Rerank  │                                     │
+│                      │    │  (LLM)   │                                     │
+│                      │    └────┬─────┘                                     │
+│                      │         │                                            │
+│                      │         ▼                                            │
+│                      │    ┌──────────┐    ┌───────────┐                    │
+│                      └───▶│  Answer  │───▶│  Answer + │                    │
+│                           │  (LLM)   │    │ Disclaimer│                    │
+│                           └──────────┘    └───────────┘                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
-
-## Features
-
-- **PDF Ingestion**: Convert Medicaid PDFs to Markdown using OCR
-- **Hybrid Search**: Combine vector similarity (Qdrant) with BM25 (PostgreSQL)
-- **RRF Fusion**: Reciprocal Rank Fusion for optimal result merging
-- **LLM Reranking**: Listwise reranking using local LLM
-- **Grounded Answers**: Responses with document/page/chunk citations
-- **Caching**: Embedding and query result caching
-- **Metrics**: Query logging and performance tracking
 
 ## Prerequisites
 
@@ -128,14 +143,37 @@ pnpm ingest stats
 ### 6. Query the System
 
 ```bash
-# Ask a question
-pnpm query ask "What are the income requirements for Medicaid?"
+# General questions (no disclaimer)
+pnpm query ask "What is the LIFE program and how does it help seniors?"
+pnpm query ask "What are the income limits for Medicare Savings Programs?"
 
-# Start interactive mode
-pnpm query interactive
+# Sensitive topics (automatic disclaimers added)
+pnpm query ask "Can I transfer my house to my children to qualify for Medicaid?"
+pnpm query ask "My Medicaid application was denied, how do I appeal?"
 
 # View metrics
 pnpm query metrics
+```
+
+#### Example Output with Guardrails
+
+For sensitive topics like asset transfers, the system automatically adds disclaimers:
+
+```
+Answer:
+If you transfer ownership to a child under 21 years old, it does not affect
+your Medicaid eligibility. However, if you give away your house within the
+past 60 months before applying for Medicaid, it will be reviewed and could
+potentially disqualify you from receiving Medicaid benefits.
+
+Citations: [1] PA-DHS-Estate-Recovery-FAQ.pdf
+
+---
+**Important Notice:** Asset transfers within 5 years of applying for Medicaid
+("look-back period") can result in penalties that delay your coverage.
+Please consult an elder law attorney.
+
+**For Professional Help:** Elder Law Attorney - PA Referral: 1-800-932-0311
 ```
 
 ### 7. Start the API Server
@@ -277,20 +315,43 @@ src/
 │   └── index.ts
 ├── db/                  # Database migrations
 │   └── migrate.ts
+├── freshness/           # Data freshness tracking
+│   └── checker.ts       # FPL, MSP limits staleness detection
+├── guardrails/          # Sensitive topic detection
+│   ├── index.ts         # GuardrailsEngine
+│   ├── detector.ts      # Keyword-based topic detection
+│   └── disclaimers.ts   # Disclaimer templates and referrals
 ├── ingestion/           # Document ingestion pipeline
 │   ├── chunker.ts       # Markdown chunking
 │   ├── pdf-processor.ts # PDF to Markdown conversion
 │   └── pipeline.ts      # Complete ingestion pipeline
+├── prompts/             # LLM prompt templates
+│   └── senior-assistant.ts  # Senior-focused prompts
 ├── retrieval/           # Query retrieval pipeline
 │   ├── fusion.ts        # RRF fusion algorithm
 │   ├── reranker.ts      # LLM-based reranking
-│   └── pipeline.ts      # Complete retrieval pipeline
+│   └── pipeline.ts      # Complete retrieval pipeline with guardrails
 ├── types/               # TypeScript types
 │   └── index.ts
 ├── utils/               # Utility functions
 │   ├── hash.ts
-│   └── logger.ts
+│   ├── logger.ts
+│   └── text-sanitizer.ts  # PostgreSQL encoding fixes
 └── index.ts             # Main entry point
+
+tests/
+├── e2e/                 # End-to-end tests
+│   └── senior-queries.e2e.test.ts
+├── fixtures/            # Test data
+│   ├── queries/         # Senior intent test queries
+│   └── expected/        # Golden answers for validation
+└── helpers/             # Test utilities
+    ├── mock-lm-studio.ts
+    └── test-fixtures.ts
+
+scripts/
+└── migrations/          # Database migrations
+    └── 002_senior_focus.sql  # Senior-focused schema additions
 ```
 
 ## Troubleshooting
