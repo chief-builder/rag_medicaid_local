@@ -1,13 +1,15 @@
-import { readFile, unlink, readdir } from 'fs/promises';
-import { basename, join, dirname } from 'path';
+import { readFile, unlink, readdir, mkdir } from 'fs/promises';
+import { basename, join } from 'path';
 import { tmpdir } from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import pdfParse from 'pdf-parse';
-import * as pdfPoppler from 'pdf-poppler';
 import { OcrResult, OcrPage } from '../types/index.js';
 import { LMStudioClient } from '../clients/lm-studio.js';
 import { createChildLogger } from '../utils/logger.js';
 import { sanitizeForPostgres } from '../utils/text-sanitizer.js';
 
+const execAsync = promisify(exec);
 const logger = createChildLogger('pdf-processor');
 
 // Minimum text length to consider a page as having extractable text
@@ -116,22 +118,26 @@ export class PdfProcessor {
    */
   private async extractPagesWithOCR(filepath: string, totalPages: number): Promise<OcrPage[]> {
     const pages: OcrPage[] = [];
-    const tempDir = tmpdir();
-    const baseName = `ocr_${Date.now()}`;
+    const tempDir = join(tmpdir(), `ocr_${Date.now()}`);
+    const baseName = 'page';
     const convertedFiles: string[] = [];
 
     try {
-      // Convert PDF pages to PNG images using pdf-poppler
+      // Create temp directory for images
+      await mkdir(tempDir, { recursive: true });
+
+      // Convert PDF pages to PNG images using system pdftoppm (from poppler)
       logger.info({ filepath, totalPages }, 'Converting PDF pages to images for OCR');
 
-      const opts: pdfPoppler.Options = {
-        format: 'png',
-        out_dir: tempDir,
-        out_prefix: baseName,
-        scale: 2048, // Higher resolution for better OCR
-      };
+      const outputPrefix = join(tempDir, baseName);
+      const cmd = `pdftoppm -png -r 150 "${filepath}" "${outputPrefix}"`;
 
-      await pdfPoppler.convert(filepath, opts);
+      try {
+        await execAsync(cmd);
+      } catch (error) {
+        logger.error({ error, cmd }, 'pdftoppm failed - ensure poppler is installed (brew install poppler)');
+        throw new Error('PDF to image conversion failed. Please install poppler: brew install poppler');
+      }
 
       // Find all generated image files
       const tempFiles = await readdir(tempDir);
@@ -178,13 +184,19 @@ export class PdfProcessor {
 
       return pages;
     } finally {
-      // Clean up temporary image files
+      // Clean up temporary image files and directory
       for (const file of convertedFiles) {
         try {
           await unlink(file);
         } catch {
           // Ignore cleanup errors
         }
+      }
+      try {
+        const { rmdir } = await import('fs/promises');
+        await rmdir(tempDir);
+      } catch {
+        // Ignore cleanup errors
       }
     }
   }
