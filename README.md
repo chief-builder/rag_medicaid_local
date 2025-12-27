@@ -87,10 +87,40 @@ A fully local, open-source Retrieval-Augmented Generation (RAG) system for Penns
 - Node.js 20+
 - pnpm
 - Docker & Docker Compose
-- [LM Studio](https://lmstudio.ai/) with:
-  - `allenai/olmocr-2-7b` (OCR)
-  - `Qwen2.5-7B-Instruct` (LLM)
-  - Text embedding model (e.g., `nomic-embed-text-v1.5`)
+- Poppler (for PDF processing): `brew install poppler` (macOS) or `apt install poppler-utils` (Linux)
+- [LM Studio](https://lmstudio.ai/) with the following models loaded:
+  - `text-embedding-nomic-embed-text-v1.5` (Embeddings - 768 dimensions)
+  - `qwen2.5-vl-7b-instruct` (LLM for answers and reranking)
+  - `allenai/olmocr-2-7b` (OCR for scanned PDFs - optional, only needed for image-based PDFs)
+
+## Model Usage
+
+The system uses three specialized models for different tasks in the pipeline:
+
+### Embedding Model (`text-embedding-nomic-embed-text-v1.5`)
+**Required** - Used for all vector search operations.
+
+| Stage | Usage |
+|-------|-------|
+| Ingestion | Converts each document chunk into a 768-dimension vector stored in Qdrant |
+| Query | Converts the user's question into a vector for similarity search |
+
+### LLM Model (`qwen2.5-vl-7b-instruct`)
+**Required** - Used for intelligent processing of search results.
+
+| Stage | Usage |
+|-------|-------|
+| Reranking | Listwise reranking of hybrid search results to improve relevance ordering |
+| Answer Generation | Generates grounded answers with citations from retrieved context |
+
+### OCR Model (`allenai/olmocr-2-7b`)
+**Optional** - Only needed when ingesting scanned/image-based PDFs.
+
+| Stage | Usage |
+|-------|-------|
+| PDF Ingestion | Converts page images to markdown text using vision capabilities |
+
+The system automatically detects whether a PDF contains extractable text or requires OCR. If native text extraction yields fewer than 50 characters, it falls back to OCR processing (~25 seconds per page).
 
 ## Quick Start
 
@@ -122,10 +152,16 @@ pnpm db:migrate
 ### 4. Start LM Studio
 
 1. Open LM Studio
-2. Load `allenai/olmocr-2-7b` for OCR
-3. Load `Qwen2.5-7B-Instruct` for LLM
-4. Load an embedding model
-5. Start the local server (default: http://localhost:1234)
+2. Search for and download these models:
+   - `nomic-ai/nomic-embed-text-v1.5-GGUF` (embeddings)
+   - `Qwen/Qwen2.5-VL-7B-Instruct-GGUF` (LLM)
+   - `allenai/olmocr-2-7b` (OCR - only if ingesting scanned PDFs)
+3. Load the embedding model and LLM model
+4. Start the local server (default: http://localhost:1234)
+5. Verify models are loaded:
+   ```bash
+   curl http://localhost:1234/v1/models | jq '.data[].id'
+   ```
 
 ### 5. Ingest Documents
 
@@ -263,9 +299,10 @@ GET /metrics
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LM_STUDIO_BASE_URL` | `http://localhost:1234/v1` | LM Studio API URL |
-| `LM_STUDIO_OCR_MODEL` | `allenai/olmocr-2-7b` | OCR model name |
-| `LM_STUDIO_LLM_MODEL` | `qwen2.5-7b-instruct` | LLM model name |
+| `LM_STUDIO_OCR_MODEL` | `allenai/olmocr-2-7b` | OCR model for scanned PDFs |
+| `LM_STUDIO_LLM_MODEL` | `qwen2.5-vl-7b-instruct` | LLM for answers and reranking |
 | `LM_STUDIO_EMBEDDING_MODEL` | `text-embedding-nomic-embed-text-v1.5` | Embedding model |
+| `EMBEDDING_DIMENSION` | `768` | Embedding vector dimension (must match model) |
 | `QDRANT_URL` | `http://localhost:6333` | Qdrant server URL |
 | `QDRANT_COLLECTION` | `medicaid_chunks` | Qdrant collection name |
 | `POSTGRES_HOST` | `localhost` | PostgreSQL host |
@@ -359,8 +396,22 @@ scripts/
 ### LM Studio Connection Issues
 
 1. Ensure LM Studio is running and the local server is started
-2. Verify the correct models are loaded
+2. Verify models are loaded:
+   ```bash
+   curl http://localhost:1234/v1/models | jq '.data[].id'
+   ```
 3. Check `LM_STUDIO_BASE_URL` matches your LM Studio server
+4. Ensure model names in `.env` match exactly what LM Studio reports
+
+### Embedding Dimension Mismatch
+
+If you see errors about vector dimensions:
+1. Check your embedding model's dimension (nomic-embed-text-v1.5 uses 768)
+2. Update `EMBEDDING_DIMENSION` in `.env` to match
+3. If collection exists with wrong dimension, reset and re-ingest:
+   ```bash
+   pnpm reset:ingest  # Warning: deletes all data and re-ingests
+   ```
 
 ### Database Connection Issues
 
@@ -376,11 +427,24 @@ docker-compose logs qdrant
 pnpm docker:down && pnpm docker:up
 ```
 
+### Query Returns "Cannot find answer"
+
+1. Verify documents are ingested:
+   ```bash
+   pnpm ingest stats
+   ```
+2. Check LM Studio has the LLM model loaded (not just embeddings)
+3. Try a simpler query to test: "What is Medicaid?"
+
 ### Ingestion Failures
 
 - Ensure PDFs are valid and not password-protected
 - Check available disk space
 - Verify LM Studio has enough memory for the models
+- For OCR issues with scanned PDFs:
+  - Ensure poppler is installed: `brew install poppler` (macOS) or `apt install poppler-utils` (Linux)
+  - Ensure `allenai/olmocr-2-7b` is loaded in LM Studio
+  - OCR takes ~25 seconds per page on a 7B model
 
 ## License
 
