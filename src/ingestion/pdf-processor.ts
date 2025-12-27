@@ -1,12 +1,19 @@
-import { readFile } from 'fs/promises';
-import { basename } from 'path';
+import { readFile, unlink, readdir, mkdir } from 'fs/promises';
+import { basename, join } from 'path';
+import { tmpdir } from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import pdfParse from 'pdf-parse';
 import { OcrResult, OcrPage } from '../types/index.js';
 import { LMStudioClient } from '../clients/lm-studio.js';
 import { createChildLogger } from '../utils/logger.js';
 import { sanitizeForPostgres } from '../utils/text-sanitizer.js';
 
+const execAsync = promisify(exec);
 const logger = createChildLogger('pdf-processor');
+
+// Minimum text length to consider a page as having extractable text
+const MIN_TEXT_LENGTH = 50;
 
 /**
  * Process PDF files and convert to markdown using OCR
@@ -21,8 +28,8 @@ export class PdfProcessor {
   /**
    * Process a PDF file and extract text/markdown
    *
-   * This method tries OCR first for best quality, falling back to
-   * standard text extraction if OCR fails.
+   * This method tries text extraction first, falling back to
+   * OCR for scanned/image-based PDFs.
    */
   async process(filepath: string): Promise<OcrResult> {
     const filename = basename(filepath);
@@ -37,51 +44,47 @@ export class PdfProcessor {
 
       logger.info({ totalPages }, 'PDF parsed, extracting pages');
 
-      // Try OCR processing
-      const pages = await this.extractPagesWithOCR(pdfBuffer, totalPages);
+      // Try text extraction first
+      const extractedText = sanitizeForPostgres(pdfData.text).trim();
 
-      // Combine all pages into full markdown
-      const fullMarkdown = pages.map((p) => p.markdown).join('\n\n---\n\n');
+      // Check if we got meaningful text
+      if (extractedText.length >= MIN_TEXT_LENGTH) {
+        logger.info({ textLength: extractedText.length }, 'Text extraction successful, using native text');
+        const pages = this.extractPagesFromText(extractedText, totalPages);
+
+        logger.info({ extractedPages: pages.length }, 'Text extraction complete');
+
+        return {
+          filename,
+          pages,
+          fullMarkdown: pages.map((p) => p.markdown).join('\n\n---\n\n'),
+          totalPages,
+        };
+      }
+
+      // Text extraction failed or returned minimal content - use OCR
+      logger.info({ textLength: extractedText.length }, 'Text extraction insufficient, switching to OCR');
+      const pages = await this.extractPagesWithOCR(filepath, totalPages);
+
+      logger.info({ extractedPages: pages.length }, 'OCR extraction complete');
 
       return {
         filename,
         pages,
-        fullMarkdown,
+        fullMarkdown: pages.map((p) => p.markdown).join('\n\n---\n\n'),
         totalPages,
       };
     } catch (error) {
-      logger.warn(
-        { error, filepath },
-        'OCR failed, falling back to text extraction'
-      );
-
-      // Fallback to simple text extraction
-      return this.extractTextFallback(filepath);
+      logger.error({ error, filepath }, 'PDF processing failed');
+      throw error;
     }
   }
 
   /**
-   * Extract pages using OCR (vision model)
+   * Extract pages from native PDF text
    */
-  private async extractPagesWithOCR(
-    pdfBuffer: Buffer,
-    totalPages: number
-  ): Promise<OcrPage[]> {
+  private extractPagesFromText(text: string, totalPages: number): OcrPage[] {
     const pages: OcrPage[] = [];
-
-    // For OCR, we need to convert PDF pages to images
-    // Since we can't do true page-by-page rendering in Node without
-    // additional dependencies, we'll use the text content but structure
-    // it as if it came from OCR
-
-    // Note: For true OCR with olmocr, you'd need to:
-    // 1. Use a library like pdf2pic to convert pages to images
-    // 2. Send each image to the OCR model
-    // This is a simplified implementation that works with text PDFs
-
-    const pdfData = await pdfParse(pdfBuffer);
-    // Sanitize text to remove invalid UTF-8 characters
-    const text = sanitizeForPostgres(pdfData.text);
 
     // Split text by form feed or other page markers
     const pageTexts = text.split(/\f/);
@@ -89,7 +92,6 @@ export class PdfProcessor {
     for (let i = 0; i < pageTexts.length; i++) {
       const pageText = pageTexts[i].trim();
       if (pageText.length > 0) {
-        // Convert text to markdown format
         const markdown = this.textToMarkdown(pageText, i + 1);
         pages.push({
           pageNumber: i + 1,
@@ -108,9 +110,95 @@ export class PdfProcessor {
       });
     }
 
-    logger.info({ extractedPages: pages.length }, 'OCR extraction complete');
-
     return pages;
+  }
+
+  /**
+   * Extract pages using true OCR with vision model
+   */
+  private async extractPagesWithOCR(filepath: string, totalPages: number): Promise<OcrPage[]> {
+    const pages: OcrPage[] = [];
+    const tempDir = join(tmpdir(), `ocr_${Date.now()}`);
+    const baseName = 'page';
+    const convertedFiles: string[] = [];
+
+    try {
+      // Create temp directory for images
+      await mkdir(tempDir, { recursive: true });
+
+      // Convert PDF pages to PNG images using system pdftoppm (from poppler)
+      logger.info({ filepath, totalPages }, 'Converting PDF pages to images for OCR');
+
+      const outputPrefix = join(tempDir, baseName);
+      const cmd = `pdftoppm -png -r 150 "${filepath}" "${outputPrefix}"`;
+
+      try {
+        await execAsync(cmd);
+      } catch (error) {
+        logger.error({ error, cmd }, 'pdftoppm failed - ensure poppler is installed (brew install poppler)');
+        throw new Error('PDF to image conversion failed. Please install poppler: brew install poppler');
+      }
+
+      // Find all generated image files
+      const tempFiles = await readdir(tempDir);
+      const imageFiles = tempFiles
+        .filter(f => f.startsWith(baseName) && f.endsWith('.png'))
+        .sort(); // Ensure pages are in order
+
+      logger.info({ imageCount: imageFiles.length }, 'PDF converted to images');
+
+      // Process each page with OCR
+      for (let i = 0; i < imageFiles.length; i++) {
+        const imagePath = join(tempDir, imageFiles[i]);
+        convertedFiles.push(imagePath);
+        const pageNumber = i + 1;
+
+        logger.info({ pageNumber, totalPages: imageFiles.length }, 'OCR processing page');
+
+        try {
+          // Read image and convert to base64
+          const imageBuffer = await readFile(imagePath);
+          const imageBase64 = imageBuffer.toString('base64');
+
+          // Call OCR model
+          const markdown = await this.lmStudio.ocrToMarkdown(imageBase64, 'image/png');
+
+          pages.push({
+            pageNumber,
+            markdown: `[Page: ${pageNumber}]\n\n${markdown}`,
+            confidence: 0.95, // OCR has some uncertainty
+          });
+
+          logger.debug({ pageNumber, markdownLength: markdown.length }, 'Page OCR complete');
+        } catch (error) {
+          logger.error({ error, pageNumber }, 'Failed to OCR page');
+
+          // Add placeholder for failed page
+          pages.push({
+            pageNumber,
+            markdown: `[Page: ${pageNumber}]\n\n[OCR failed for this page]`,
+            confidence: 0,
+          });
+        }
+      }
+
+      return pages;
+    } finally {
+      // Clean up temporary image files and directory
+      for (const file of convertedFiles) {
+        try {
+          await unlink(file);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+      try {
+        const { rmdir } = await import('fs/promises');
+        await rmdir(tempDir);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 
   /**
@@ -165,82 +253,6 @@ export class PdfProcessor {
     markdown += processedLines.join('\n');
 
     return markdown;
-  }
-
-  /**
-   * Fallback text extraction without OCR
-   */
-  private async extractTextFallback(filepath: string): Promise<OcrResult> {
-    const filename = basename(filepath);
-    const pdfBuffer = await readFile(filepath);
-    const pdfData = await pdfParse(pdfBuffer);
-
-    // Sanitize text to remove invalid UTF-8 characters
-    const sanitizedText = sanitizeForPostgres(pdfData.text);
-    const markdown = this.textToMarkdown(sanitizedText, 1);
-
-    return {
-      filename,
-      pages: [
-        {
-          pageNumber: 1,
-          markdown,
-          confidence: 1.0,
-        },
-      ],
-      fullMarkdown: markdown,
-      totalPages: pdfData.numpages,
-    };
-  }
-
-  /**
-   * Process PDF with true OCR using vision model
-   * This is a placeholder for when pdf2pic or similar is available
-   */
-  async processWithVisionOCR(
-    filepath: string,
-    pageImages: Array<{ pageNumber: number; base64: string; mimeType: string }>
-  ): Promise<OcrResult> {
-    const filename = basename(filepath);
-    const pages: OcrPage[] = [];
-
-    for (const pageImage of pageImages) {
-      logger.debug({ pageNumber: pageImage.pageNumber }, 'OCR processing page');
-
-      try {
-        const markdown = await this.lmStudio.ocrToMarkdown(
-          pageImage.base64,
-          pageImage.mimeType
-        );
-
-        pages.push({
-          pageNumber: pageImage.pageNumber,
-          markdown: `[Page: ${pageImage.pageNumber}]\n\n${markdown}`,
-          confidence: 0.95, // OCR has some uncertainty
-        });
-      } catch (error) {
-        logger.error(
-          { error, pageNumber: pageImage.pageNumber },
-          'Failed to OCR page'
-        );
-
-        // Add placeholder for failed page
-        pages.push({
-          pageNumber: pageImage.pageNumber,
-          markdown: `[Page: ${pageImage.pageNumber}]\n\n[OCR failed for this page]`,
-          confidence: 0,
-        });
-      }
-    }
-
-    const fullMarkdown = pages.map((p) => p.markdown).join('\n\n---\n\n');
-
-    return {
-      filename,
-      pages,
-      fullMarkdown,
-      totalPages: pageImages.length,
-    };
   }
 }
 
