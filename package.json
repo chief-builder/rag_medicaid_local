@@ -22,7 +22,10 @@
     "download:webpages": "tsx scripts/download-webpages.ts",
     "download:all": "pnpm download:pdfs && pnpm download:webpages",
     "reset:ingest": "./scripts/reset-and-ingest.sh",
-    "trace:query": "tsx scripts/trace-query-pipeline.ts"
+    "trace:query": "tsx scripts/trace-query-pipeline.ts",
+    "monitor": "tsx src/cli/monitor.ts",
+    "monitor:check": "tsx src/cli/monitor.ts check",
+    "monitor:status": "tsx src/cli/monitor.ts status"
   },
   "engines": {
     "node": ">=20.0.0"

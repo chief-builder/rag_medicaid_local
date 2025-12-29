@@ -349,7 +349,45 @@ Please consult an elder law attorney.
 **For Professional Help:** Elder Law Attorney - PA Referral: 1-800-932-0311
 ```
 
-### 7. Start the API Server
+### 7. Monitor Source Changes
+
+The system includes automated monitoring for Pennsylvania Medicaid source changes:
+
+```bash
+# Check monitor status
+pnpm monitor status
+
+# List all monitored sources
+pnpm monitor list
+
+# Check all sources for changes (respects schedule)
+pnpm monitor check
+
+# Force check a specific source
+pnpm monitor check --source "OIM Operations Memoranda" --force
+
+# Check only weekly sources
+pnpm monitor check --frequency weekly
+
+# Test scraping a URL without saving
+pnpm monitor test-scrape "http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm" --type oim_ops_memo
+
+# View recent changes
+pnpm monitor changes --limit 10
+```
+
+**Monitored Sources:**
+
+| Source | Frequency | Description |
+|--------|-----------|-------------|
+| OIM Operations Memoranda | Weekly | Policy updates from PA DHS |
+| OIM Policy Clarifications | Weekly | Rule clarifications |
+| PA Bulletin DHS Notices | Weekly | Official legal notices (DHS-filtered) |
+| OIM LTC Handbook | Monthly | Long-Term Care eligibility policy |
+| OIM MA Handbook | Monthly | Medical Assistance policy |
+| PA Code Chapter 258 | Monthly | Estate recovery regulations |
+
+### 8. Start the API Server
 
 ```bash
 # Development mode
@@ -481,7 +519,8 @@ src/
 │   └── server.ts
 ├── cli/                 # CLI commands
 │   ├── ingest.ts
-│   └── query.ts
+│   ├── query.ts
+│   └── monitor.ts       # Source monitoring CLI
 ├── clients/             # External service clients
 │   ├── lm-studio.ts     # LM Studio OpenAI-compatible client
 │   ├── postgres.ts      # PostgreSQL client
@@ -491,7 +530,7 @@ src/
 ├── db/                  # Database migrations
 │   └── migrate.ts
 ├── freshness/           # Data freshness tracking
-│   └── checker.ts       # FPL, MSP limits staleness detection
+│   └── checker.ts       # FPL, MSP, weekly/monthly staleness detection
 ├── guardrails/          # Sensitive topic detection
 │   ├── index.ts         # GuardrailsEngine
 │   ├── detector.ts      # Keyword-based topic detection
@@ -499,7 +538,15 @@ src/
 ├── ingestion/           # Document ingestion pipeline
 │   ├── chunker.ts       # Markdown chunking
 │   ├── pdf-processor.ts # PDF to Markdown conversion
+│   ├── regulatory-chunker.ts  # PA Code/OIM legal text chunking
 │   └── pipeline.ts      # Complete ingestion pipeline
+├── monitoring/          # Source change monitoring
+│   ├── types.ts         # Monitor types and interfaces
+│   ├── source-monitor.ts  # Monitoring service
+│   └── scrapers/        # Source-specific scrapers
+│       ├── base-scraper.ts      # Abstract scraper base
+│       ├── oim-scraper.ts       # OIM memos/handbooks
+│       └── pa-bulletin-scraper.ts  # PA Bulletin/PA Code
 ├── prompts/             # LLM prompt templates
 │   └── senior-assistant.ts  # Senior-focused prompts
 ├── retrieval/           # Query retrieval pipeline
