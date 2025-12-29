@@ -44,6 +44,52 @@ export type Config = z.infer<typeof ConfigSchema>;
 // Document Types
 // ============================================================
 
+/**
+ * Document type classifications for Pennsylvania Medicaid sources
+ */
+export type DocumentType =
+  | 'msp_guide'
+  | 'income_limits'
+  | 'ltc_info'
+  | 'estate_recovery'
+  | 'pace_pacenet'
+  | 'life_program'
+  | 'chc_waiver'
+  | 'general_eligibility'
+  | 'dual_eligible'
+  | 'extra_help'
+  // Phase 1 additions
+  | 'oim_ltc_handbook'
+  | 'oim_ma_handbook'
+  | 'oim_ops_memo'
+  | 'oim_policy_clarification'
+  | 'pa_code'
+  | 'pa_bulletin'
+  // Phase 2 (future)
+  | 'chc_publications'
+  | 'chc_handbook'
+  | 'policy_index';
+
+/**
+ * Source authority classification
+ */
+export type SourceAuthority = 'primary' | 'secondary';
+
+/**
+ * Legal weight of a document
+ */
+export type LegalWeight = 'regulatory' | 'guidance' | 'informational';
+
+/**
+ * Source format for documents
+ */
+export type SourceFormat =
+  | 'pdf'
+  | 'html_multipage'
+  | 'html_list'
+  | 'html_structured'
+  | 'html_filtered';
+
 export interface Document {
   id: string;
   filename: string;
@@ -53,6 +99,12 @@ export interface Document {
   totalPages?: number;
   ingestedAt: Date;
   metadata: Record<string, unknown>;
+  // Enhanced fields for Phase 1
+  documentType?: DocumentType;
+  sourceAuthority?: SourceAuthority;
+  legalWeight?: LegalWeight;
+  sourceFormat?: SourceFormat;
+  effectiveDate?: Date;
 }
 
 export interface DocumentInput {
@@ -62,6 +114,12 @@ export interface DocumentInput {
   title?: string;
   totalPages?: number;
   metadata?: Record<string, unknown>;
+  // Enhanced fields for Phase 1
+  documentType?: DocumentType;
+  sourceAuthority?: SourceAuthority;
+  legalWeight?: LegalWeight;
+  sourceFormat?: SourceFormat;
+  effectiveDate?: Date;
 }
 
 // ============================================================

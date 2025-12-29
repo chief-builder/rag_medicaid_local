@@ -67,15 +67,33 @@ Instead, it equips users with accurate information so they can:
   - Pennsylvania Legal Aid Network: 1-800-322-7572
 - **Chester County Resources**: Local CAO and APPRISE contact information
 - **Data Freshness Tracking**: Warnings for outdated FPL, MSP limits, and other data
+- **Automated Source Monitoring**: Weekly/monthly change detection for OIM memos and PA Bulletin
+- **Regulatory Text Chunking**: Specialized handling for PA Code and OIM Handbook structure
 
-### Ingested Documents (12 PDFs, 480 chunks)
-- PHLP 2025 MSP Guide (Medicare Savings Programs)
-- PHLP 2025 Income Limits
+### Ingested Documents (18 Sources)
+
+#### Primary Sources (PA DHS / PA Code)
+- OIM Long-Term Care Handbook (HTML - core eligibility policy)
+- OIM Medical Assistance Eligibility Handbook (HTML)
+- OIM Operations Memoranda (weekly change feed)
+- OIM Policy Clarifications (weekly change feed)
+- PA Code Chapter 258 - Estate Recovery (regulatory text)
+- PA Bulletin DHS Notices (weekly legal notices)
 - PA DHS Long-Term Care Information
 - PA DHS Estate Recovery FAQ
 - PA DHS LIFE Program Materials
 - PA DHS Healthy Horizons
-- And more Pennsylvania Medicaid resources
+
+#### Secondary Sources (PHLP)
+- PHLP 2025 MSP Guide (Medicare Savings Programs)
+- PHLP 2025 Income Limits
+- PHLP CHC Waiver Eligibility Guide
+- PHLP Medicare/Medicaid Dual Eligible Guide
+- PHLP Extra Help/LIS Guide
+
+#### Prescription Assistance
+- PA PACE/PACENET Provider Guide
+- PA Aging PACE Overview
 
 ## Architecture
 
