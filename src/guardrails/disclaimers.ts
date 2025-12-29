@@ -28,6 +28,13 @@ const DISCLAIMERS: Record<SensitiveCategory, string> = {
     'You have the right to appeal Medicaid decisions. There are strict deadlines ' +
     'for filing appeals, typically 30 days from the decision notice. ' +
     'Free legal help is available for Medicaid appeals.',
+
+  look_back_period:
+    'Pennsylvania applies a 60-month (5-year) look-back period for asset transfers. ' +
+    'Any transfers made during this period may result in a penalty period that delays ' +
+    'Medicaid coverage. Penalties are calculated based on the value transferred divided by ' +
+    'the average monthly cost of nursing home care. Consult an elder law attorney before ' +
+    'making any transfers.',
 };
 
 /**
@@ -52,6 +59,11 @@ const REFERRALS: Record<SensitiveCategory, string> = {
   appeals:
     'PHLP Appeals Assistance (free representation for Medicaid appeals): 1-800-274-3258\n' +
     'Pennsylvania Legal Aid Network: 1-800-322-7572',
+
+  look_back_period:
+    'Elder Law Attorney - Specializing in Medicaid planning and asset protection\n' +
+    'PA Bar Association Referral: 1-800-932-0311\n' +
+    'PHLP (free guidance on Medicaid rules): 1-800-274-3258',
 };
 
 /**
@@ -101,7 +113,7 @@ export function getReferral(category: SensitiveCategory): string {
 export function getChesterCountyResources(): string {
   const resources = Object.values(CHESTER_COUNTY_RESOURCES);
   return resources
-    .map((r) => `**${r.name}**\nPhone: ${r.phone}${r.description ? `\n${r.description}` : ''}`)
+    .map((r) => `**${r.name}**\nPhone: ${r.phone}${'description' in r && r.description ? `\n${r.description}` : ''}`)
     .join('\n\n');
 }
 

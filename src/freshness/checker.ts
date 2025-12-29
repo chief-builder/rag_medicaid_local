@@ -12,7 +12,19 @@ export type DataType =
   | 'spousal_protection'
   | 'part_d_costs'
   | 'pace_pacenet_limits'
-  | 'chester_county_contacts';
+  | 'chester_county_contacts'
+  // Phase 1 additions
+  | 'oim_ops_memo'
+  | 'oim_policy_clarification'
+  | 'pa_bulletin_dhs'
+  | 'oim_ltc_handbook'
+  | 'oim_ma_handbook'
+  | 'pa_code_chapter_258'
+  // Phase 3: CHC Managed Care additions
+  | 'chc_publications'
+  | 'chc_handbook_upmc'
+  | 'chc_handbook_amerihealth'
+  | 'chc_handbook_phw';
 
 /**
  * Update frequency types
@@ -22,6 +34,8 @@ export type UpdateFrequency =
   | 'annually_april'
   | 'annually_october'
   | 'quarterly'
+  | 'monthly'
+  | 'weekly'
   | 'as_needed';
 
 /**
@@ -112,6 +126,71 @@ const DEFAULT_RULES: FreshnessRule[] = [
     updateFrequency: 'quarterly',
     sourceName: 'County websites',
   },
+  // Phase 1 additions - OIM and PA Code/Bulletin sources
+  {
+    dataType: 'oim_ops_memo',
+    updateFrequency: 'weekly',
+    sourceName: 'PA DHS Office of Income Maintenance',
+    sourceUrl: 'http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm',
+  },
+  {
+    dataType: 'oim_policy_clarification',
+    updateFrequency: 'weekly',
+    sourceName: 'PA DHS Office of Income Maintenance',
+    sourceUrl: 'http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_Forms_Operations_Memoranda_and_Policy_Clarifications/300_Policy_Clarifications.htm',
+  },
+  {
+    dataType: 'pa_bulletin_dhs',
+    updateFrequency: 'weekly',
+    sourceName: 'Pennsylvania Bulletin',
+    sourceUrl: 'https://www.pacodeandbulletin.gov/Display/pabull',
+  },
+  {
+    dataType: 'oim_ltc_handbook',
+    updateFrequency: 'monthly',
+    sourceName: 'PA DHS Office of Income Maintenance',
+    sourceUrl: 'http://services.dpw.state.pa.us/oimpolicymanuals/ltc/Long-Term_Care_Handbook.htm',
+  },
+  {
+    dataType: 'oim_ma_handbook',
+    updateFrequency: 'monthly',
+    sourceName: 'PA DHS Office of Income Maintenance',
+    sourceUrl: 'http://services.dpw.state.pa.us/oimpolicymanuals/ma/Medical_Assistance_Handbook.htm',
+  },
+  {
+    dataType: 'pa_code_chapter_258',
+    updateFrequency: 'as_needed',
+    sourceName: 'Pennsylvania Code',
+    sourceUrl: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter258/chap258toc.html',
+  },
+  // Phase 3: CHC Managed Care additions
+  {
+    dataType: 'chc_publications',
+    updateFrequency: 'quarterly',
+    sourceName: 'PA DHS Community HealthChoices',
+    sourceUrl: 'https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/community-healthchoices/publications',
+  },
+  {
+    dataType: 'chc_handbook_upmc',
+    updateFrequency: 'annually_january',
+    typicalUpdateMonth: 1,
+    sourceName: 'UPMC Community HealthChoices',
+    sourceUrl: 'https://www.upmchealthplan.com/chc/member-handbook',
+  },
+  {
+    dataType: 'chc_handbook_amerihealth',
+    updateFrequency: 'annually_january',
+    typicalUpdateMonth: 1,
+    sourceName: 'AmeriHealth Caritas PA Community HealthChoices',
+    sourceUrl: 'https://www.amerihealthcaritaschc.com/member/resources/handbooks',
+  },
+  {
+    dataType: 'chc_handbook_phw',
+    updateFrequency: 'annually_january',
+    typicalUpdateMonth: 1,
+    sourceName: 'PA Health & Wellness',
+    sourceUrl: 'https://www.pahealthwellness.com/members/chc/resources',
+  },
 ];
 
 /**
@@ -165,6 +244,16 @@ export class FreshnessChecker {
       life_program: 'nursing_home_fbr',
       chc_waiver: 'nursing_home_fbr',
       general_eligibility: 'federal_poverty_level',
+      // Phase 1 additions
+      oim_ltc_handbook: 'oim_ltc_handbook',
+      oim_ma_handbook: 'oim_ma_handbook',
+      oim_ops_memo: 'oim_ops_memo',
+      oim_policy_clarification: 'oim_policy_clarification',
+      pa_code: 'pa_code_chapter_258',
+      pa_bulletin: 'pa_bulletin_dhs',
+      // Phase 3: CHC Managed Care additions
+      chc_publications: 'chc_publications',
+      chc_handbook: 'chc_handbook_upmc', // Default to UPMC; specific MCO handled via metadata
     };
 
     const dataType = dataTypeMap[doc.documentType];
@@ -218,11 +307,31 @@ export class FreshnessChecker {
 
       case 'quarterly':
         // Check if more than 3 months old
-        const monthsDiff = (checkYear - effectiveYear) * 12 + (checkMonth - (effectiveDate.getMonth() + 1));
-        if (monthsDiff > 3) {
+        const monthsDiffQuarterly = (checkYear - effectiveYear) * 12 + (checkMonth - (effectiveDate.getMonth() + 1));
+        if (monthsDiffQuarterly > 3) {
           isStale = true;
           warningLevel = 'info';
           warningMessage = `This ${formatDataType(rule.dataType)} may be outdated. Contact information should be verified quarterly.`;
+        }
+        break;
+
+      case 'monthly':
+        // Check if more than 1 month old
+        const monthsDiffMonthly = (checkYear - effectiveYear) * 12 + (checkMonth - (effectiveDate.getMonth() + 1));
+        if (monthsDiffMonthly > 1) {
+          isStale = true;
+          warningLevel = monthsDiffMonthly > 3 ? 'warning' : 'info';
+          warningMessage = `This ${formatDataType(rule.dataType)} may be outdated. Policy handbooks should be checked monthly.`;
+        }
+        break;
+
+      case 'weekly':
+        // Check if more than 1 week old (approximately 7 days)
+        const daysDiff = Math.floor((checkDate.getTime() - effectiveDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 7) {
+          isStale = true;
+          warningLevel = daysDiff > 14 ? 'warning' : 'info';
+          warningMessage = `This ${formatDataType(rule.dataType)} may be outdated. This source should be checked weekly for updates.`;
         }
         break;
 
@@ -296,6 +405,18 @@ function formatDataType(dataType: DataType): string {
     part_d_costs: 'Part D prescription drug costs',
     pace_pacenet_limits: 'PACE/PACENET income limits',
     chester_county_contacts: 'Chester County contact information',
+    // Phase 1 additions
+    oim_ops_memo: 'OIM Operations Memoranda',
+    oim_policy_clarification: 'OIM Policy Clarifications',
+    pa_bulletin_dhs: 'PA Bulletin DHS notices',
+    oim_ltc_handbook: 'OIM Long-Term Care Handbook',
+    oim_ma_handbook: 'OIM Medical Assistance Handbook',
+    pa_code_chapter_258: 'PA Code Chapter 258 (Estate Recovery)',
+    // Phase 3: CHC Managed Care additions
+    chc_publications: 'CHC Publications Hub',
+    chc_handbook_upmc: 'UPMC Community HealthChoices Handbook',
+    chc_handbook_amerihealth: 'AmeriHealth Caritas CHC Handbook',
+    chc_handbook_phw: 'PA Health & Wellness CHC Handbook',
   };
 
   return formats[dataType] || dataType;

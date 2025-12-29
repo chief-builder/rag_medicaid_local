@@ -1,15 +1,21 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Express } from 'express';
 import { Config, QueryRequest, RagError } from '../types/index.js';
 import { createRetrievalPipeline, RetrievalPipeline } from '../retrieval/pipeline.js';
 import { createIngestionPipeline, IngestionPipeline } from '../ingestion/pipeline.js';
 import { createChildLogger } from '../utils/logger.js';
+
+interface ApiServer {
+  app: Express;
+  retrievalPipeline: RetrievalPipeline;
+  ingestionPipeline: IngestionPipeline;
+}
 
 const logger = createChildLogger('api-server');
 
 /**
  * Create and configure the Express API server
  */
-export function createApiServer(config: Config) {
+export function createApiServer(config: Config): ApiServer {
   const app = express();
   app.use(express.json());
 

@@ -67,15 +67,44 @@ Instead, it equips users with accurate information so they can:
   - Pennsylvania Legal Aid Network: 1-800-322-7572
 - **Chester County Resources**: Local CAO and APPRISE contact information
 - **Data Freshness Tracking**: Warnings for outdated FPL, MSP limits, and other data
+- **Answer Freshness Display**: Every answer includes source information:
+  - When sources were last retrieved
+  - Effective period (e.g., "Calendar Year 2025")
+  - Income limits effective dates (e.g., "April 2025 - March 2026")
+  - Stale data warnings when documents need updating
+- **Automated Source Monitoring**: Weekly/monthly change detection for OIM memos and PA Bulletin
+- **Regulatory Text Chunking**: Specialized handling for PA Code and OIM Handbook structure
 
-### Ingested Documents (12 PDFs, 480 chunks)
-- PHLP 2025 MSP Guide (Medicare Savings Programs)
-- PHLP 2025 Income Limits
+### Ingested Documents (22 Sources)
+
+#### Primary Sources (PA DHS / PA Code)
+- OIM Long-Term Care Handbook (HTML - core eligibility policy)
+- OIM Medical Assistance Eligibility Handbook (HTML)
+- OIM Operations Memoranda (weekly change feed)
+- OIM Policy Clarifications (weekly change feed)
+- PA Code Chapter 258 - Estate Recovery (regulatory text)
+- PA Bulletin DHS Notices (weekly legal notices)
 - PA DHS Long-Term Care Information
 - PA DHS Estate Recovery FAQ
 - PA DHS LIFE Program Materials
 - PA DHS Healthy Horizons
-- And more Pennsylvania Medicaid resources
+
+#### CHC Managed Care Sources (Phase 3)
+- PA DHS CHC Publications Hub (quarterly)
+- UPMC Community HealthChoices Participant Handbook (annually)
+- AmeriHealth Caritas PA CHC Participant Handbook (annually)
+- PA Health & Wellness CHC Participant Handbook (annually)
+
+#### Secondary Sources (PHLP)
+- PHLP 2025 MSP Guide (Medicare Savings Programs)
+- PHLP 2025 Income Limits
+- PHLP CHC Waiver Eligibility Guide
+- PHLP Medicare/Medicaid Dual Eligible Guide
+- PHLP Extra Help/LIS Guide
+
+#### Prescription Assistance
+- PA PACE/PACENET Provider Guide
+- PA Aging PACE Overview
 
 ## Architecture
 
@@ -331,7 +360,47 @@ Please consult an elder law attorney.
 **For Professional Help:** Elder Law Attorney - PA Referral: 1-800-932-0311
 ```
 
-### 7. Start the API Server
+### 7. Monitor Source Changes
+
+The system includes automated monitoring for Pennsylvania Medicaid source changes:
+
+```bash
+# Check monitor status
+pnpm monitor status
+
+# List all monitored sources
+pnpm monitor list
+
+# Check all sources for changes (respects schedule)
+pnpm monitor check
+
+# Force check a specific source
+pnpm monitor check --source "OIM Operations Memoranda" --force
+
+# Check only weekly sources
+pnpm monitor check --frequency weekly
+
+# Test scraping a URL without saving
+pnpm monitor test-scrape "http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm" --type oim_ops_memo
+
+# View recent changes
+pnpm monitor changes --limit 10
+```
+
+**Monitored Sources:**
+
+| Source | Frequency | Description |
+|--------|-----------|-------------|
+| OIM Operations Memoranda | Weekly | Policy updates from PA DHS |
+| OIM Policy Clarifications | Weekly | Rule clarifications |
+| PA Bulletin DHS Notices | Weekly | Official legal notices (DHS-filtered) |
+| OIM LTC Handbook | Monthly | Long-Term Care eligibility policy |
+| OIM MA Handbook | Monthly | Medical Assistance policy |
+| PA Code Chapter 258 | Monthly | Estate recovery regulations |
+| CHC Publications Hub | Quarterly | CHC participant guides and fair hearing info |
+| MCO Participant Handbooks | Annually | UPMC, AmeriHealth Caritas, PA Health & Wellness |
+
+### 8. Start the API Server
 
 ```bash
 # Development mode
@@ -463,7 +532,8 @@ src/
 │   └── server.ts
 ├── cli/                 # CLI commands
 │   ├── ingest.ts
-│   └── query.ts
+│   ├── query.ts
+│   └── monitor.ts       # Source monitoring CLI
 ├── clients/             # External service clients
 │   ├── lm-studio.ts     # LM Studio OpenAI-compatible client
 │   ├── postgres.ts      # PostgreSQL client
@@ -473,7 +543,7 @@ src/
 ├── db/                  # Database migrations
 │   └── migrate.ts
 ├── freshness/           # Data freshness tracking
-│   └── checker.ts       # FPL, MSP limits staleness detection
+│   └── checker.ts       # FPL, MSP, weekly/monthly staleness detection
 ├── guardrails/          # Sensitive topic detection
 │   ├── index.ts         # GuardrailsEngine
 │   ├── detector.ts      # Keyword-based topic detection
@@ -481,7 +551,15 @@ src/
 ├── ingestion/           # Document ingestion pipeline
 │   ├── chunker.ts       # Markdown chunking
 │   ├── pdf-processor.ts # PDF to Markdown conversion
+│   ├── regulatory-chunker.ts  # PA Code/OIM legal text chunking
 │   └── pipeline.ts      # Complete ingestion pipeline
+├── monitoring/          # Source change monitoring
+│   ├── types.ts         # Monitor types and interfaces
+│   ├── source-monitor.ts  # Monitoring service
+│   └── scrapers/        # Source-specific scrapers
+│       ├── base-scraper.ts      # Abstract scraper base
+│       ├── oim-scraper.ts       # OIM memos/handbooks
+│       └── pa-bulletin-scraper.ts  # PA Bulletin/PA Code
 ├── prompts/             # LLM prompt templates
 │   └── senior-assistant.ts  # Senior-focused prompts
 ├── retrieval/           # Query retrieval pipeline
