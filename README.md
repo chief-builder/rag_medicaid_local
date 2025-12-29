@@ -67,6 +67,11 @@ Instead, it equips users with accurate information so they can:
   - Pennsylvania Legal Aid Network: 1-800-322-7572
 - **Chester County Resources**: Local CAO and APPRISE contact information
 - **Data Freshness Tracking**: Warnings for outdated FPL, MSP limits, and other data
+- **Answer Freshness Display**: Every answer includes source information:
+  - When sources were last retrieved
+  - Effective period (e.g., "Calendar Year 2025")
+  - Income limits effective dates (e.g., "April 2025 - March 2026")
+  - Stale data warnings when documents need updating
 - **Automated Source Monitoring**: Weekly/monthly change detection for OIM memos and PA Bulletin
 - **Regulatory Text Chunking**: Specialized handling for PA Code and OIM Handbook structure
 

@@ -6,6 +6,7 @@ import {
   Citation,
   AnswerWithCitations,
   QueryResponse,
+  ResponseFreshnessInfo,
 } from '../types/index.js';
 import { hashString } from '../utils/hash.js';
 import { createChildLogger } from '../utils/logger.js';
@@ -15,6 +16,11 @@ import { PostgresStore, getPostgresStore } from '../clients/postgres.js';
 import { fuseResults, deduplicateResults } from './fusion.js';
 import { Reranker, createReranker } from './reranker.js';
 import { GuardrailsEngine, getGuardrailsEngine, GuardrailResult } from '../guardrails/index.js';
+import {
+  FreshnessDisplayService,
+  getFreshnessDisplayService,
+  DocumentMetadata,
+} from '../freshness/index.js';
 import { v4 as uuid } from 'uuid';
 
 const logger = createChildLogger('retrieval-pipeline');
@@ -29,6 +35,9 @@ export class RetrievalPipeline {
   private postgres: PostgresStore;
   private reranker: Reranker;
   private guardrails: GuardrailsEngine;
+  private freshnessDisplay: FreshnessDisplayService;
+  private documentMetadataCache: Map<string, DocumentMetadata> = new Map();
+  private metadataCacheInitialized = false;
 
   constructor(config: Config) {
     this.config = config;
@@ -37,6 +46,7 @@ export class RetrievalPipeline {
     this.postgres = getPostgresStore(config.postgres);
     this.reranker = createReranker(this.lmStudio);
     this.guardrails = getGuardrailsEngine();
+    this.freshnessDisplay = getFreshnessDisplayService();
   }
 
   /**
@@ -102,6 +112,13 @@ export class RetrievalPipeline {
     // Step 7: Generate answer with citations
     const answerResult = await this.generateAnswer(query, finalResults);
 
+    // Step 8: Generate freshness information
+    await this.ensureMetadataCache();
+    const freshnessInfo = this.freshnessDisplay.generateFreshnessInfo(
+      answerResult.citations,
+      this.documentMetadataCache
+    );
+
     // Build response
     const latencyMs = Date.now() - startTime;
     let response: QueryResponse = {
@@ -117,12 +134,23 @@ export class RetrievalPipeline {
         rerankedResults: rerankedResults.length,
         finalResults: finalResults.length,
       },
+      freshnessInfo: {
+        lastRetrieved: freshnessInfo.lastRetrieved,
+        lastRetrievedFormatted: freshnessInfo.lastRetrievedFormatted,
+        effectivePeriod: freshnessInfo.effectivePeriod,
+        incomeLimitsEffective: freshnessInfo.incomeLimitsEffective,
+        hasStaleData: freshnessInfo.hasStaleData,
+        warningCount: freshnessInfo.warnings.length,
+      },
     };
 
     // Apply guardrails (add disclaimers for sensitive topics)
     if (guardrailResult.disclaimerRequired) {
       response = this.applyGuardrails(response, guardrailResult);
     }
+
+    // Add freshness section to answer
+    response = this.addFreshnessSection(response, freshnessInfo);
 
     // Cache the response (without guardrails, they'll be reapplied on retrieval)
     if (this.config.cache.enabled) {
@@ -291,6 +319,58 @@ export class RetrievalPipeline {
     noAnswerRate: number;
   }> {
     return this.postgres.getQueryMetrics();
+  }
+
+  /**
+   * Ensure document metadata cache is initialized
+   */
+  private async ensureMetadataCache(): Promise<void> {
+    if (this.metadataCacheInitialized) {
+      return;
+    }
+
+    try {
+      // Get system ingestion date
+      const lastIngestionDate = await this.postgres.getLastIngestionDate();
+      if (lastIngestionDate) {
+        this.freshnessDisplay.setSystemIngestionDate(lastIngestionDate);
+      }
+
+      // Get document metadata
+      const documents = await this.postgres.getDocumentsMetadata();
+      for (const doc of documents) {
+        this.documentMetadataCache.set(doc.id, {
+          documentType: doc.documentType,
+          effectiveDate: doc.effectiveDate,
+        });
+      }
+
+      this.metadataCacheInitialized = true;
+      logger.debug(
+        { documentCount: documents.length },
+        'Document metadata cache initialized'
+      );
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize metadata cache');
+      // Don't throw, freshness info is non-critical
+    }
+  }
+
+  /**
+   * Add freshness section to a response
+   */
+  private addFreshnessSection(
+    response: QueryResponse,
+    freshnessInfo: import('../freshness/index.js').SourceFreshnessInfo
+  ): QueryResponse {
+    // Format the freshness section
+    const freshnessSection = this.freshnessDisplay.formatFreshnessSection(freshnessInfo);
+
+    // Append to the answer
+    return {
+      ...response,
+      answer: response.answer + '\n\n' + freshnessSection,
+    };
   }
 
   /**

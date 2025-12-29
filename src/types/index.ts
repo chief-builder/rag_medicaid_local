@@ -231,6 +231,24 @@ export interface QueryRequest {
   useCache?: boolean;
 }
 
+/**
+ * Freshness information for a query response
+ */
+export interface ResponseFreshnessInfo {
+  /** When sources were last retrieved/ingested */
+  lastRetrieved: Date;
+  /** Formatted date string for display */
+  lastRetrievedFormatted: string;
+  /** Effective period description (e.g., "Calendar Year 2025") */
+  effectivePeriod?: string;
+  /** Income limits effective period if applicable */
+  incomeLimitsEffective?: string;
+  /** Whether any sources are stale */
+  hasStaleData: boolean;
+  /** Number of freshness warnings */
+  warningCount: number;
+}
+
 export interface QueryResponse extends AnswerWithCitations {
   latencyMs: number;
   retrievalStats: {
@@ -240,6 +258,8 @@ export interface QueryResponse extends AnswerWithCitations {
     rerankedResults: number;
     finalResults: number;
   };
+  /** Freshness information about the sources used */
+  freshnessInfo?: ResponseFreshnessInfo;
 }
 
 // ============================================================

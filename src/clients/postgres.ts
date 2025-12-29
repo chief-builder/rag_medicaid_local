@@ -406,6 +406,57 @@ export class PostgresStore {
   // Utilities
   // ============================================================
 
+  /**
+   * Get the most recent document ingestion date
+   */
+  async getLastIngestionDate(): Promise<Date | null> {
+    try {
+      const result = await this.pool.query<{ max_date: Date }>(
+        `SELECT MAX(ingested_at) as max_date FROM documents`
+      );
+      return result.rows[0]?.max_date || null;
+    } catch (error) {
+      logger.error({ error }, 'Failed to get last ingestion date');
+      return null;
+    }
+  }
+
+  /**
+   * Get document metadata for freshness checking
+   */
+  async getDocumentsMetadata(): Promise<Array<{
+    id: string;
+    documentType?: string;
+    effectiveDate?: Date;
+    ingestedAt: Date;
+  }>> {
+    try {
+      const result = await this.pool.query<{
+        id: string;
+        documentType: string | null;
+        effectiveDate: Date | null;
+        ingestedAt: Date;
+      }>(
+        `SELECT
+          id,
+          metadata->>'documentType' as "documentType",
+          (metadata->>'effectiveDate')::timestamp as "effectiveDate",
+          ingested_at as "ingestedAt"
+         FROM documents`
+      );
+
+      return result.rows.map(row => ({
+        id: row.id,
+        documentType: row.documentType ?? undefined,
+        effectiveDate: row.effectiveDate ?? undefined,
+        ingestedAt: row.ingestedAt,
+      }));
+    } catch (error) {
+      logger.error({ error }, 'Failed to get documents metadata');
+      return [];
+    }
+  }
+
   async healthCheck(): Promise<boolean> {
     try {
       await this.pool.query('SELECT 1');
