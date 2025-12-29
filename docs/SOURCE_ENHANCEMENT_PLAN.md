@@ -1,7 +1,8 @@
 # Pennsylvania Medicaid Source Enhancement Plan
 
-> **Status**: DRAFT - Awaiting approval before implementation
+> **Status**: DRAFT - Updated with decisions, awaiting implementation approval
 > **Created**: 2025-12-27
+> **Updated**: 2025-12-29
 > **Branch**: `claude/review-project-docs-RkWHL`
 
 ---
@@ -9,6 +10,44 @@
 ## Executive Summary
 
 This document outlines opportunities to enhance the RAG system's source coverage and currency monitoring based on a comprehensive review of Pennsylvania-focused Medicaid source requirements. The plan prioritizes **official DHS/PA Code sources** while maintaining the existing PHLP secondary references.
+
+---
+
+## OIM Policy Manuals Architecture (Discovered)
+
+The Pennsylvania DHS Office of Income Maintenance (OIM) maintains authoritative policy manuals in an HTML-based structure at `services.dpw.state.pa.us/oimpolicymanuals/`.
+
+### Two Primary Handbooks
+
+| Handbook | Base URL | Purpose |
+|----------|----------|---------|
+| **Medical Assistance Eligibility Handbook** | http://services.dpw.state.pa.us/oimpolicymanuals/ma/Medical_Assistance_Handbook.htm | General MA eligibility rules |
+| **Long-Term Care Handbook** | http://services.dpw.state.pa.us/oimpolicymanuals/ltc/Long-Term_Care_Handbook.htm | LTC-specific eligibility (nursing home, HCBS) |
+
+### Key Sections Identified
+
+#### Medical Assistance Handbook Sections
+| Section | URL Pattern | Content |
+|---------|-------------|---------|
+| **300 - Forms, Ops Memos, Policy Clarifications** | `/ma/300_Forms_Operations_Memoranda_and_Policy_Clarifications/` | Change feed (critical) |
+| **Operations Memoranda** | `/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm` | Policy updates |
+| **Policy Clarifications** | `/ma/300_Forms_Operations_Memoranda_and_Policy_Clarifications/300_Policy_Clarifications.htm` | Rule clarifications |
+| **316 - MAWD** | `/ma/316_MAWD/316_02_Deciding_on_Eligibility.htm` | Workers with Disabilities |
+| **338 - MA Benefits** | `/ma/338_Medical_Assistance_Benefits/338_5_Using_Medical_Assistance.htm` | Using MA coverage |
+
+#### Long-Term Care Handbook Sections
+| Section | URL Pattern | Content |
+|---------|-------------|---------|
+| **400 - Forms** | `/ltc/400_Forms_OPSMemo_PolicyClarifications/400_Forms.htm` | LTC forms |
+| **403 - General Policy** | `/ltc/403_General_Information/403_1_General_Policy.htm` | Eligibility requirements |
+
+### Source Format: HTML (Multi-Page)
+
+The OIM manuals are **HTML-based with hierarchical navigation**, not PDFs. This requires:
+1. Web scraping to capture content
+2. Specialized chunking for legal/regulatory text
+3. Section-level metadata preservation
+4. Link resolution for cross-references
 
 ---
 
@@ -54,39 +93,57 @@ This document outlines opportunities to enhance the RAG system's source coverage
 
 | Field | Value |
 |-------|-------|
-| Source URL | https://www.dhs.pa.gov/providers/Providers/Pages/OIM-Long-Term-Care-Manual.aspx |
-| Document Type | `oim_handbook` (new) |
+| Primary Source URL | http://services.dpw.state.pa.us/oimpolicymanuals/ltc/Long-Term_Care_Handbook.htm |
+| Portal Page | https://www.pa.gov/agencies/dhs/resources/policy-handbooks-manuals |
+| Document Type | `oim_ltc_handbook` (new) |
+| Format | **HTML multi-page** (requires web scraping) |
+| Key Sections | 400 (Forms), 403 (General Policy) |
 | Update Frequency | `as_needed` (changes several times/year) |
 | Sensitive Topics | Yes (eligibility, transfers, spousal rules) |
 
-#### 2. Policy Handbooks & Manuals Index
+#### 2. OIM Medical Assistance Eligibility Handbook
+**Status**: NOT IN REGISTRY
+**Priority**: CRITICAL
+**Rationale**: General MA eligibility rules referenced by LTC handbook. Contains MAWD, MA benefits, and cross-program rules.
+
+| Field | Value |
+|-------|-------|
+| Source URL | http://services.dpw.state.pa.us/oimpolicymanuals/ma/Medical_Assistance_Handbook.htm |
+| Document Type | `oim_ma_handbook` (new) |
+| Format | **HTML multi-page** (requires web scraping) |
+| Key Sections | 316 (MAWD), 338 (MA Benefits), 300 (Ops Memos) |
+| Update Frequency | `as_needed` |
+
+#### 3. Policy Handbooks & Manuals Index
 **Status**: NOT IN REGISTRY
 **Priority**: HIGH
 **Rationale**: Official entry point for all OIM manuals; provides navigation context.
 
 | Field | Value |
 |-------|-------|
-| Source URL | https://www.dhs.pa.gov/providers/Providers/Pages/Policy-Handbooks-and-Manuals.aspx |
+| Source URL | https://www.pa.gov/agencies/dhs/resources/policy-handbooks-manuals |
 | Document Type | `policy_index` (new) |
 | Update Frequency | `as_needed` |
 
-#### 3. Recent OIM Operations Memoranda & Policy Clarifications
+#### 4. Recent OIM Operations Memoranda & Policy Clarifications
 **Status**: NOT TRACKED
 **Priority**: CRITICAL
 **Rationale**: This is the primary *change feed* - contains mid-year clarifications that affect eligibility rules.
 
 | Field | Value |
 |-------|-------|
-| Source URL | https://www.dhs.pa.gov/providers/Providers/Pages/OIM-Policy-Clarifications.aspx |
+| Operations Memoranda URL | http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm |
+| Policy Clarifications URL | http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_Forms_Operations_Memoranda_and_Policy_Clarifications/300_Policy_Clarifications.htm |
 | Document Type | `oim_ops_memo` (new) |
+| Format | **HTML list pages** (requires automated scraping) |
 | Update Frequency | `weekly` (new frequency type needed) |
-| Monitoring | Should be checked weekly for new memos |
+| Monitoring | Automated weekly check for new memos |
 
 ---
 
 ### B. Missing Pennsylvania Legal Authority (Priority: HIGH)
 
-#### 4. PA Code Chapter 258 — Medical Assistance Estate Recovery
+#### 5. PA Code Chapter 258 — Medical Assistance Estate Recovery
 **Status**: NOT IN REGISTRY
 **Priority**: HIGH
 **Rationale**: The actual regulatory text. When users ask "what's the law," this is *the law*.
@@ -98,7 +155,7 @@ This document outlines opportunities to enhance the RAG system's source coverage
 | Update Frequency | `as_needed` (regulatory changes are infrequent but high-impact) |
 | Sensitive Topics | Yes (estate recovery) |
 
-#### 5. PA Bulletin Notices (Program Changes)
+#### 6. PA Bulletin Notices (Program Changes - DHS Only)
 **Status**: NOT TRACKED
 **Priority**: HIGH
 **Rationale**: Official legal notices for program expansions, rate changes, policy updates. Example: LIFE expansion notices.
@@ -108,14 +165,15 @@ This document outlines opportunities to enhance the RAG system's source coverage
 | Source URL | https://www.pacodeandbulletin.gov/Display/pabull |
 | Document Type | `pa_bulletin` (new) |
 | Update Frequency | `weekly` (published every Saturday) |
-| Monitoring | Should be checked weekly for DHS-related notices |
+| Monitoring | Automated weekly check - **DHS notices only** (filtered) |
+| Filter Keywords | "Department of Human Services", "Medical Assistance", "LIFE", "CHC", "Long-Term Care" |
 | Example | LIFE expansion notice Sep 13, 2025 |
 
 ---
 
 ### C. Missing CHC / Managed Care Context (Priority: MEDIUM)
 
-#### 6. Community HealthChoices Publications Hub
+#### 7. Community HealthChoices Publications Hub
 **Status**: Only have PHLP's advocacy guide (secondary)
 **Priority**: MEDIUM
 **Rationale**: Official CHC publications from PA DHS provide authoritative procedures, fair hearing info, and plan contacts.
@@ -126,16 +184,25 @@ This document outlines opportunities to enhance the RAG system's source coverage
 | Document Type | `chc_publications` (new) |
 | Update Frequency | `quarterly` |
 
-#### 7. CHC Participant Handbook Templates
+#### 8. CHC Participant Handbooks (All MCOs)
 **Status**: NOT IN REGISTRY
 **Priority**: MEDIUM
 **Rationale**: Plan-specific handbooks contain procedures, grievance processes, and contact information.
 
 | Field | Value |
 |-------|-------|
-| Source URL | (from individual MCO plans) |
+| MCO Coverage | **All MCOs** (UPMC, AmeriHealth Caritas, PA Health & Wellness) |
 | Document Type | `chc_handbook` (new) |
 | Update Frequency | `annually` |
+| Content | Grievance procedures, service authorization, fair hearing rights, provider directories |
+
+**MCO Participant Handbooks to Include:**
+
+| MCO | Region Coverage | Handbook Source |
+|-----|-----------------|-----------------|
+| UPMC Community HealthChoices | Southwest, Southeast, Lehigh/Capital | UPMC website |
+| AmeriHealth Caritas PA Community HealthChoices | All regions | AmeriHealth website |
+| PA Health & Wellness | All regions | PHW website |
 
 ---
 
@@ -309,22 +376,27 @@ If you're reading this after January 2026, updated figures may be available.
 
 ## Summary: Source Additions Required
 
-### High Priority (Phase 1)
+**Total New Sources**: 8 primary sources to add
 
-| # | Document | Type | Monitoring |
-|---|----------|------|------------|
-| 1 | OIM Long-Term Care Handbook | Primary | Monthly |
-| 2 | OIM Ops Memos & Policy Clarifications | Primary | Weekly |
-| 3 | PA Code Chapter 258 (Estate Recovery) | Primary | As-needed |
-| 4 | PA Bulletin (DHS notices) | Primary | Weekly |
+### High Priority (Phase 1) - 6 Sources
 
-### Medium Priority (Phase 2)
+| # | Document | Type | Format | Monitoring |
+|---|----------|------|--------|------------|
+| 1 | OIM Long-Term Care Handbook | Primary | HTML (scrape) | Monthly |
+| 2 | OIM Medical Assistance Eligibility Handbook | Primary | HTML (scrape) | Monthly |
+| 3 | OIM Operations Memoranda | Primary | HTML (scrape) | Weekly |
+| 4 | OIM Policy Clarifications | Primary | HTML (scrape) | Weekly |
+| 5 | PA Code Chapter 258 (Estate Recovery) | Primary | HTML | As-needed |
+| 6 | PA Bulletin (DHS notices only) | Primary | HTML (filtered) | Weekly |
 
-| # | Document | Type | Monitoring |
-|---|----------|------|------------|
-| 5 | Policy Handbooks & Manuals Index | Primary | Monthly |
-| 6 | CHC Publications Hub | Primary | Quarterly |
-| 7 | CHC Participant Handbook Templates | Primary | Annually |
+### Medium Priority (Phase 2) - 2 Sources + MCO Handbooks
+
+| # | Document | Type | Format | Monitoring |
+|---|----------|------|--------|------------|
+| 7 | CHC Publications Hub | Primary | Mixed | Quarterly |
+| 8 | CHC Participant Handbooks (3 MCOs) | Primary | PDF | Annually |
+
+**MCO Handbooks**: UPMC, AmeriHealth Caritas, PA Health & Wellness (all regions)
 
 ### Metadata & Infrastructure (Phase 3)
 
@@ -376,17 +448,284 @@ If you're reading this after January 2026, updated figures may be available.
 
 ---
 
-## Open Questions for Discussion
+## Resolved Decisions
 
-1. **OIM Handbook Format**: The OIM LTC Handbook may be a multi-chapter HTML document. Should we capture it as a single PDF or multiple section documents?
+| Question | Decision | Rationale |
+|----------|----------|-----------|
+| **OIM Handbook Format** | Multi-section HTML scraping | OIM manuals are HTML-based at `services.dpw.state.pa.us/oimpolicymanuals/`. Will scrape and preserve section structure. |
+| **PA Bulletin Scope** | DHS notices only (filtered) | Filter for "Department of Human Services", "Medical Assistance", "LIFE", "CHC", "Long-Term Care" keywords. |
+| **CHC Plan Handbooks** | All MCOs | Include UPMC, AmeriHealth Caritas, and PA Health & Wellness handbooks. |
+| **Monitoring Automation** | Automated | Implement automated scraping/change detection for weekly and monthly sources. |
+| **Legal Text Chunking** | Specialized strategy | Create regulatory text chunker that preserves section/subsection structure. |
 
-2. **PA Bulletin Scope**: PA Bulletin is published weekly with many notices. Should we filter only for DHS/Medicaid-related notices or capture all?
+---
 
-3. **CHC Plan Handbooks**: There are multiple MCO plans (e.g., UPMC, AmeriHealth Caritas, PA Health & Wellness). Should we include handbooks from all plans or focus on a subset?
+## Automated Monitoring Architecture
 
-4. **Monitoring Automation**: Should we implement automated scraping/change detection, or is a manual checklist sufficient for the initial version?
+### Overview
 
-5. **Legal Text Chunking**: PA Code regulatory text may require different chunking strategies than prose documents. Should we create a specialized chunker?
+Implement a scheduled monitoring system that automatically detects changes to source documents and ingests updates.
+
+### Component Design
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SOURCE MONITORING PIPELINE                                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│   ┌──────────────┐     ┌───────────────┐     ┌──────────────────┐   │
+│   │   Scheduler  │────▶│  Web Scraper  │────▶│  Change Detector │   │
+│   │  (cron/node) │     │  (per source) │     │   (hash compare) │   │
+│   └──────────────┘     └───────────────┘     └────────┬─────────┘   │
+│                                                        │             │
+│                                              ┌─────────▼─────────┐   │
+│                                              │  Changed?         │   │
+│                                              │  ┌─────┐ ┌─────┐  │   │
+│                                              │  │ Yes │ │ No  │  │   │
+│                                              │  └──┬──┘ └──┬──┘  │   │
+│                                              └─────┼───────┼─────┘   │
+│                                                    │       │         │
+│                               ┌────────────────────▼───┐   │         │
+│                               │   Ingestion Pipeline   │   │         │
+│                               │   - Parse HTML/PDF     │   │         │
+│                               │   - Chunk content      │   │         │
+│                               │   - Embed & store      │   │         │
+│                               └────────────────────────┘   │         │
+│                                                            │         │
+│                               ┌────────────────────────────▼───┐     │
+│                               │   Update Monitoring Log        │     │
+│                               │   - Last checked timestamp     │     │
+│                               │   - Content hash               │     │
+│                               │   - Change history             │     │
+│                               └────────────────────────────────┘     │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Monitoring Schedule
+
+| Frequency | Sources | Trigger | Actions |
+|-----------|---------|---------|---------|
+| **Weekly (Sunday)** | OIM Ops Memos, Policy Clarifications, PA Bulletin (DHS) | Cron: `0 6 * * 0` | Scrape list pages, detect new items, ingest new content |
+| **Monthly (1st)** | DHS LTSS page, Estate Recovery page, LIFE page, OIM Handbooks | Cron: `0 6 1 * *` | Hash compare main content, re-ingest if changed |
+| **Quarterly (Jan/Apr/Jul/Oct)** | CHC Publications, MCO Handbooks | Cron: `0 6 1 1,4,7,10 *` | Check for new handbook versions |
+| **Annually (January)** | All threshold documents (FPL, FBR, CSRA, MMMNA) | Cron: `0 6 15 1 *` | Full refresh of income/resource limit documents |
+
+### Database Schema for Monitoring
+
+```sql
+-- New table for source monitoring
+CREATE TABLE source_monitors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_name TEXT NOT NULL UNIQUE,
+    source_url TEXT NOT NULL,
+    source_type TEXT NOT NULL,  -- 'oim_ops_memo', 'pa_bulletin', 'dhs_page', etc.
+    check_frequency TEXT NOT NULL,  -- 'weekly', 'monthly', 'quarterly', 'annually'
+    last_checked_at TIMESTAMP WITH TIME ZONE,
+    last_content_hash TEXT,
+    last_change_detected_at TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT true,
+    filter_keywords TEXT[],  -- For PA Bulletin filtering
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Change history log
+CREATE TABLE source_change_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    monitor_id UUID NOT NULL REFERENCES source_monitors(id),
+    detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    previous_hash TEXT,
+    new_hash TEXT,
+    change_summary TEXT,  -- Brief description of what changed
+    items_added INTEGER DEFAULT 0,  -- For list-based sources (ops memos)
+    auto_ingested BOOLEAN DEFAULT false,
+    ingestion_status TEXT  -- 'pending', 'success', 'failed'
+);
+
+-- Index for efficient lookups
+CREATE INDEX idx_source_monitors_frequency ON source_monitors(check_frequency);
+CREATE INDEX idx_source_monitors_last_checked ON source_monitors(last_checked_at);
+CREATE INDEX idx_change_log_monitor ON source_change_log(monitor_id);
+```
+
+### Scraper Implementation Approach
+
+```typescript
+// src/monitoring/scrapers/base-scraper.ts
+interface ScraperResult {
+  contentHash: string;
+  content: string | string[];  // Single page or list of items
+  metadata: {
+    scrapedAt: Date;
+    itemCount?: number;  // For list pages
+    newItems?: string[];  // URLs of new items detected
+  };
+}
+
+abstract class BaseScraper {
+  abstract scrape(url: string): Promise<ScraperResult>;
+  abstract detectChanges(previous: ScraperResult, current: ScraperResult): ChangeDetection;
+}
+
+// Specialized scrapers
+class OIMOpsMemoScraper extends BaseScraper { /* List page scraping */ }
+class PABulletinScraper extends BaseScraper { /* Filtered bulletin scraping */ }
+class DHSPageScraper extends BaseScraper { /* Single page hash comparison */ }
+class OIMHandbookScraper extends BaseScraper { /* Multi-page handbook scraping */ }
+```
+
+### Alert & Notification
+
+When changes are detected:
+1. Log change to `source_change_log` table
+2. Auto-ingest new content if `auto_ingest` is enabled
+3. Update FreshnessChecker with new effective dates
+4. Optionally: Send notification (email/webhook) for critical sources
+
+---
+
+## Specialized Legal Text Chunking Strategy
+
+### Problem Statement
+
+Legal/regulatory text (PA Code, OIM Handbooks) has different characteristics than prose documents:
+- Hierarchical structure (Chapters → Sections → Subsections → Paragraphs)
+- Cross-references between sections
+- Numbered lists with legal significance
+- Defined terms that must remain in context
+- Amendment history notations
+
+### Chunking Strategy for Regulatory Text
+
+#### 1. Section-Aware Chunking
+
+Instead of fixed character-based chunking, use section boundaries:
+
+```typescript
+interface RegulatoryChunk {
+  id: string;
+  content: string;
+  sectionPath: string[];  // e.g., ["Chapter 258", "§258.1", "General"]
+  sectionNumber: string;  // e.g., "258.1"
+  sectionTitle: string;   // e.g., "Definitions"
+  parentSection?: string;
+  childSections?: string[];
+  crossReferences: string[];  // Other sections referenced
+  effectiveDate?: Date;
+  amendmentHistory?: string[];
+}
+```
+
+#### 2. Hierarchy Preservation
+
+```
+PA Code Chapter 258 - Estate Recovery
+├── §258.1 Definitions           → Chunk 1 (always include with related chunks)
+├── §258.2 Statement of policy   → Chunk 2
+├── §258.3 Property subject...   → Chunk 3
+│   ├── (a) Recoverable property → Sub-chunk 3a
+│   ├── (b) Exceptions           → Sub-chunk 3b
+│   └── (c) Liens                → Sub-chunk 3c
+└── §258.4 Procedures            → Chunk 4
+```
+
+#### 3. Context Window Strategy
+
+For regulatory text, include:
+- **Header context**: Chapter and section titles (always prepended)
+- **Definition injection**: When a defined term appears, include its definition
+- **Cross-reference expansion**: Optionally inline referenced sections
+
+```typescript
+interface RegulatoryChunkOptions {
+  includeParentHeaders: boolean;  // Always true for legal text
+  inlineDefinitions: boolean;     // Include §258.1 definitions when terms appear
+  expandCrossRefs: boolean;       // Inline referenced sections (careful with size)
+  preserveNumbering: boolean;     // Keep (a), (b), (c) numbering intact
+  maxChunkTokens: number;         // Target chunk size (larger for legal: 1024)
+}
+```
+
+#### 4. OIM Handbook Chunking
+
+For HTML-based OIM manuals:
+
+```typescript
+// Parse HTML structure into logical sections
+interface OIMSection {
+  chapterNumber: string;      // "403"
+  chapterTitle: string;       // "General Information"
+  sectionNumber: string;      // "403.1"
+  sectionTitle: string;       // "General Policy"
+  subsections: OIMSubsection[];
+  htmlContent: string;        // Original HTML (for rendering)
+  markdownContent: string;    // Converted for embedding
+}
+
+// Chunking rules for OIM:
+// 1. Never split within a numbered list
+// 2. Keep policy statements with their exceptions
+// 3. Preserve table structures intact
+// 4. Include section header in every chunk
+```
+
+#### 5. Implementation
+
+New file: `src/ingestion/regulatory-chunker.ts`
+
+```typescript
+export class RegulatoryChunker {
+  constructor(private options: RegulatoryChunkOptions) {}
+
+  /**
+   * Parse regulatory text into structured sections
+   */
+  parseStructure(content: string, sourceType: 'pa_code' | 'oim_handbook'): RegulatorySection[];
+
+  /**
+   * Chunk sections respecting legal structure
+   */
+  chunkSections(sections: RegulatorySection[]): RegulatoryChunk[];
+
+  /**
+   * Extract cross-references from text
+   */
+  extractCrossReferences(text: string): string[];
+
+  /**
+   * Inject definitions for referenced terms
+   */
+  injectDefinitions(chunk: RegulatoryChunk, definitions: Map<string, string>): RegulatoryChunk;
+}
+```
+
+#### 6. Metadata for Legal Chunks
+
+Enhanced chunk metadata for regulatory content:
+
+```typescript
+interface RegulatoryChunkMetadata extends ChunkMetadata {
+  // Legal structure
+  chapterNumber: string;
+  sectionNumber: string;
+  subsectionNumber?: string;
+  sectionPath: string[];
+
+  // Legal context
+  sourceAuthority: 'pa_code' | 'oim_handbook' | 'pa_bulletin';
+  legalWeight: 'regulatory' | 'guidance' | 'informational';
+  effectiveDate?: Date;
+
+  // Cross-references
+  crossReferences: string[];
+  referencedBy: string[];  // Sections that reference this one
+
+  // Amendment tracking
+  lastAmended?: Date;
+  amendmentCitation?: string;  // e.g., "52 Pa.B. 1234"
+}
+```
 
 ---
 
@@ -394,41 +733,73 @@ If you're reading this after January 2026, updated figures may be available.
 
 ### A) Pennsylvania DHS Official Guidance (Primary)
 
-| Source | Current Status | Action |
-|--------|----------------|--------|
-| Medicaid and Payment of Long-Term Services | In registry | None |
-| Estate Recovery Program overview | In registry | None |
-| LIFE program page + enrollment guidance | In registry | None |
-| General Medicaid eligibility overview | In registry (Healthy Horizons) | None |
-| Policy Handbooks & Manuals index | **MISSING** | Add (Phase 2) |
-| OIM Long-Term Care Handbook | **MISSING** | Add (Phase 1) |
-| Recent OIM Ops Memos & Policy Clarifications | **MISSING** | Add (Phase 1) |
+| Source | Current Status | Action | URL |
+|--------|----------------|--------|-----|
+| Medicaid and Payment of Long-Term Services | ✓ In registry | None | - |
+| Estate Recovery Program overview | ✓ In registry | None | - |
+| LIFE program page + enrollment guidance | ✓ In registry | None | - |
+| General Medicaid eligibility overview | ✓ In registry (Healthy Horizons) | None | - |
+| Policy Handbooks & Manuals index | **MISSING** | Add (Phase 1) | https://www.pa.gov/agencies/dhs/resources/policy-handbooks-manuals |
+| OIM Long-Term Care Handbook | **MISSING** | Add (Phase 1) | http://services.dpw.state.pa.us/oimpolicymanuals/ltc/Long-Term_Care_Handbook.htm |
+| OIM Medical Assistance Handbook | **MISSING** | Add (Phase 1) | http://services.dpw.state.pa.us/oimpolicymanuals/ma/Medical_Assistance_Handbook.htm |
+| OIM Operations Memoranda | **MISSING** | Add (Phase 1) | http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm |
+| OIM Policy Clarifications | **MISSING** | Add (Phase 1) | http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_Forms_Operations_Memoranda_and_Policy_Clarifications/300_Policy_Clarifications.htm |
 
 ### B) Pennsylvania Legal Authority (Primary)
 
-| Source | Current Status | Action |
-|--------|----------------|--------|
-| PA Code Chapter 258 (Estate Recovery) | **MISSING** | Add (Phase 1) |
-| PA Bulletin notices | **MISSING** | Add (Phase 1) |
+| Source | Current Status | Action | URL |
+|--------|----------------|--------|-----|
+| PA Code Chapter 258 (Estate Recovery) | **MISSING** | Add (Phase 1) | https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter258/chap258toc.html |
+| PA Bulletin notices (DHS only) | **MISSING** | Add (Phase 1) | https://www.pacodeandbulletin.gov/Display/pabull |
 
 ### C) CHC / Managed Care Context
 
-| Source | Current Status | Action |
-|--------|----------------|--------|
-| Community HealthChoices publications | **MISSING** (only PHLP guide) | Add (Phase 3) |
-| CHC Participant Handbook templates | **MISSING** | Add (Phase 3) |
+| Source | Current Status | Action | URL |
+|--------|----------------|--------|-----|
+| CHC Publications Hub | **MISSING** (only PHLP guide) | Add (Phase 2) | https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/community-healthchoices/publications |
+| UPMC CHC Participant Handbook | **MISSING** | Add (Phase 2) | (to be identified) |
+| AmeriHealth Caritas CHC Handbook | **MISSING** | Add (Phase 2) | (to be identified) |
+| PA Health & Wellness CHC Handbook | **MISSING** | Add (Phase 2) | (to be identified) |
 
 ### D) Support & Referrals
 
 | Source | Current Status | Action |
 |--------|----------------|--------|
-| PHLP Helpline + hours | In guardrails | None |
+| PHLP Helpline + hours | ✓ In guardrails | None |
+| Elder Law Attorney Referral | ✓ In guardrails | None |
+| PA Legal Aid Network | ✓ In guardrails | None |
 
 ### E) Limits Cheat Sheets (Secondary)
 
 | Source | Current Status | Action |
 |--------|----------------|--------|
-| PHLP 2025 Income and Resource Limits | In registry | None |
+| PHLP 2025 Income and Resource Limits | ✓ In registry | None |
+
+---
+
+## Key URLs Reference
+
+```
+# OIM Policy Manuals Base
+http://services.dpw.state.pa.us/oimpolicymanuals/
+
+# Medical Assistance Handbook
+http://services.dpw.state.pa.us/oimpolicymanuals/ma/Medical_Assistance_Handbook.htm
+http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_OpsMemo_PolicyClarifications/300_Operations_Memoranda.htm
+http://services.dpw.state.pa.us/oimpolicymanuals/ma/300_Forms_Operations_Memoranda_and_Policy_Clarifications/300_Policy_Clarifications.htm
+
+# Long-Term Care Handbook
+http://services.dpw.state.pa.us/oimpolicymanuals/ltc/Long-Term_Care_Handbook.htm
+http://services.dpw.state.pa.us/oimpolicymanuals/ltc/403_General_Information/403_1_General_Policy.htm
+
+# PA Code & Bulletin
+https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter258/chap258toc.html
+https://www.pacodeandbulletin.gov/Display/pabull
+
+# DHS Portal Pages
+https://www.pa.gov/agencies/dhs/resources/policy-handbooks-manuals
+https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/community-healthchoices/publications
+```
 
 ---
 
