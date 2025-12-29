@@ -6,7 +6,8 @@ export type SensitiveCategory =
   | 'spend_down'
   | 'asset_transfer'
   | 'spousal_complex'
-  | 'appeals';
+  | 'appeals'
+  | 'look_back_period';
 
 export interface DetectionResult {
   isSensitive: boolean;
@@ -95,6 +96,26 @@ const SENSITIVE_PATTERNS: Record<SensitiveCategory, { keywords: string[]; weight
       'disagree with',
     ],
     weight: 0.8,
+  },
+  look_back_period: {
+    keywords: [
+      'look-back',
+      'look back',
+      'lookback',
+      '60 months',
+      '60-month',
+      '5 year',
+      '5-year',
+      'five year',
+      'penalty period',
+      'transfer penalty',
+      'divestment',
+      'divestiture',
+      'uncompensated transfer',
+      'gifting penalty',
+      'medicaid penalty',
+    ],
+    weight: 1.2,
   },
 };
 

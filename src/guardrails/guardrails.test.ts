@@ -77,6 +77,39 @@ describe('Sensitive Topic Detection', () => {
       expect(getCategoryKeywords('asset_transfer')).toContain('transfer home');
       expect(getCategoryKeywords('spend_down')).toContain('spend down');
     });
+
+    it('should return keywords for look_back_period category', () => {
+      const keywords = getCategoryKeywords('look_back_period');
+      expect(keywords).toContain('look-back');
+      expect(keywords).toContain('60 months');
+      expect(keywords).toContain('penalty period');
+    });
+  });
+
+  describe('look_back_period detection', () => {
+    it('should detect look-back period questions', () => {
+      const result = detectSensitiveTopic('What is the 60 month look-back period?');
+      expect(result.isSensitive).toBe(true);
+      expect(result.category).toBe('look_back_period');
+    });
+
+    it('should detect 5-year lookback questions', () => {
+      const result = detectSensitiveTopic('How does the 5-year lookback work for Medicaid?');
+      expect(result.isSensitive).toBe(true);
+      expect(result.category).toBe('look_back_period');
+    });
+
+    it('should detect penalty period questions', () => {
+      const result = detectSensitiveTopic('Will I get a transfer penalty for gifting money?');
+      expect(result.isSensitive).toBe(true);
+      expect(result.category).toBe('look_back_period');
+    });
+
+    it('should detect divestment questions', () => {
+      const result = detectSensitiveTopic('What is considered divestment under Medicaid rules?');
+      expect(result.isSensitive).toBe(true);
+      expect(result.category).toBe('look_back_period');
+    });
   });
 });
 
@@ -104,6 +137,14 @@ describe('Disclaimers', () => {
       expect(disclaimer).toContain('right to appeal');
       expect(disclaimer).toContain('30 days');
     });
+
+    it('should return appropriate disclaimer for look_back_period', () => {
+      const disclaimer = getDisclaimer('look_back_period');
+      expect(disclaimer).toContain('60-month');
+      expect(disclaimer).toContain('5-year');
+      expect(disclaimer).toContain('penalty period');
+      expect(disclaimer).toContain('elder law attorney');
+    });
   });
 
   describe('getReferral', () => {
@@ -120,6 +161,13 @@ describe('Disclaimers', () => {
 
     it('should include legal aid for appeals', () => {
       const referral = getReferral('appeals');
+      expect(referral).toContain('PHLP');
+    });
+
+    it('should include elder law attorney for look_back_period', () => {
+      const referral = getReferral('look_back_period');
+      expect(referral).toContain('Elder Law Attorney');
+      expect(referral).toContain('PA Bar Association');
       expect(referral).toContain('PHLP');
     });
   });
