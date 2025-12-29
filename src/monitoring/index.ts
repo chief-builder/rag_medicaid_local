@@ -25,6 +25,11 @@ export {
   PACodeScraper,
   createPAScraper,
 } from './scrapers/pa-bulletin-scraper.js';
+export {
+  CHCPublicationsScraper,
+  CHCHandbookScraper,
+  createCHCScraper,
+} from './scrapers/chc-scraper.js';
 
 // Service
 export { SourceMonitorService, createSourceMonitorService } from './source-monitor.js';

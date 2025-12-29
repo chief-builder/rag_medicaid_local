@@ -19,7 +19,12 @@ export type DataType =
   | 'pa_bulletin_dhs'
   | 'oim_ltc_handbook'
   | 'oim_ma_handbook'
-  | 'pa_code_chapter_258';
+  | 'pa_code_chapter_258'
+  // Phase 3: CHC Managed Care additions
+  | 'chc_publications'
+  | 'chc_handbook_upmc'
+  | 'chc_handbook_amerihealth'
+  | 'chc_handbook_phw';
 
 /**
  * Update frequency types
@@ -158,6 +163,34 @@ const DEFAULT_RULES: FreshnessRule[] = [
     sourceName: 'Pennsylvania Code',
     sourceUrl: 'https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter258/chap258toc.html',
   },
+  // Phase 3: CHC Managed Care additions
+  {
+    dataType: 'chc_publications',
+    updateFrequency: 'quarterly',
+    sourceName: 'PA DHS Community HealthChoices',
+    sourceUrl: 'https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/community-healthchoices/publications',
+  },
+  {
+    dataType: 'chc_handbook_upmc',
+    updateFrequency: 'annually_january',
+    typicalUpdateMonth: 1,
+    sourceName: 'UPMC Community HealthChoices',
+    sourceUrl: 'https://www.upmchealthplan.com/chc/member-handbook',
+  },
+  {
+    dataType: 'chc_handbook_amerihealth',
+    updateFrequency: 'annually_january',
+    typicalUpdateMonth: 1,
+    sourceName: 'AmeriHealth Caritas PA Community HealthChoices',
+    sourceUrl: 'https://www.amerihealthcaritaschc.com/member/resources/handbooks',
+  },
+  {
+    dataType: 'chc_handbook_phw',
+    updateFrequency: 'annually_january',
+    typicalUpdateMonth: 1,
+    sourceName: 'PA Health & Wellness',
+    sourceUrl: 'https://www.pahealthwellness.com/members/chc/resources',
+  },
 ];
 
 /**
@@ -218,6 +251,9 @@ export class FreshnessChecker {
       oim_policy_clarification: 'oim_policy_clarification',
       pa_code: 'pa_code_chapter_258',
       pa_bulletin: 'pa_bulletin_dhs',
+      // Phase 3: CHC Managed Care additions
+      chc_publications: 'chc_publications',
+      chc_handbook: 'chc_handbook_upmc', // Default to UPMC; specific MCO handled via metadata
     };
 
     const dataType = dataTypeMap[doc.documentType];
@@ -376,6 +412,11 @@ function formatDataType(dataType: DataType): string {
     oim_ltc_handbook: 'OIM Long-Term Care Handbook',
     oim_ma_handbook: 'OIM Medical Assistance Handbook',
     pa_code_chapter_258: 'PA Code Chapter 258 (Estate Recovery)',
+    // Phase 3: CHC Managed Care additions
+    chc_publications: 'CHC Publications Hub',
+    chc_handbook_upmc: 'UPMC Community HealthChoices Handbook',
+    chc_handbook_amerihealth: 'AmeriHealth Caritas CHC Handbook',
+    chc_handbook_phw: 'PA Health & Wellness CHC Handbook',
   };
 
   return formats[dataType] || dataType;

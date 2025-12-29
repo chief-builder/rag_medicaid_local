@@ -70,7 +70,7 @@ Instead, it equips users with accurate information so they can:
 - **Automated Source Monitoring**: Weekly/monthly change detection for OIM memos and PA Bulletin
 - **Regulatory Text Chunking**: Specialized handling for PA Code and OIM Handbook structure
 
-### Ingested Documents (18 Sources)
+### Ingested Documents (22 Sources)
 
 #### Primary Sources (PA DHS / PA Code)
 - OIM Long-Term Care Handbook (HTML - core eligibility policy)
@@ -83,6 +83,12 @@ Instead, it equips users with accurate information so they can:
 - PA DHS Estate Recovery FAQ
 - PA DHS LIFE Program Materials
 - PA DHS Healthy Horizons
+
+#### CHC Managed Care Sources (Phase 3)
+- PA DHS CHC Publications Hub (quarterly)
+- UPMC Community HealthChoices Participant Handbook (annually)
+- AmeriHealth Caritas PA CHC Participant Handbook (annually)
+- PA Health & Wellness CHC Participant Handbook (annually)
 
 #### Secondary Sources (PHLP)
 - PHLP 2025 MSP Guide (Medicare Savings Programs)
@@ -386,6 +392,8 @@ pnpm monitor changes --limit 10
 | OIM LTC Handbook | Monthly | Long-Term Care eligibility policy |
 | OIM MA Handbook | Monthly | Medical Assistance policy |
 | PA Code Chapter 258 | Monthly | Estate recovery regulations |
+| CHC Publications Hub | Quarterly | CHC participant guides and fair hearing info |
+| MCO Participant Handbooks | Annually | UPMC, AmeriHealth Caritas, PA Health & Wellness |
 
 ### 8. Start the API Server
 

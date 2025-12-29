@@ -463,4 +463,105 @@ describe('FreshnessChecker', () => {
       }
     });
   });
+
+  // Phase 3: CHC Managed Care Tests
+  describe('Phase 3: CHC Managed Care freshness', () => {
+    it('should have rules for all CHC data types', () => {
+      const rules = checker.getAllRules();
+      const chcTypes = [
+        'chc_publications',
+        'chc_handbook_upmc',
+        'chc_handbook_amerihealth',
+        'chc_handbook_phw',
+      ];
+
+      for (const dataType of chcTypes) {
+        const rule = rules.find((r) => r.dataType === dataType);
+        expect(rule).toBeDefined();
+      }
+    });
+
+    it('should have quarterly frequency for CHC publications', () => {
+      expect(checker.getRule('chc_publications')?.updateFrequency).toBe('quarterly');
+    });
+
+    it('should have annual frequency for MCO handbooks', () => {
+      expect(checker.getRule('chc_handbook_upmc')?.updateFrequency).toBe('annually_january');
+      expect(checker.getRule('chc_handbook_amerihealth')?.updateFrequency).toBe('annually_january');
+      expect(checker.getRule('chc_handbook_phw')?.updateFrequency).toBe('annually_january');
+    });
+
+    it('should have source URLs for all CHC rules', () => {
+      const chcTypes: DataType[] = [
+        'chc_publications',
+        'chc_handbook_upmc',
+        'chc_handbook_amerihealth',
+        'chc_handbook_phw',
+      ];
+
+      for (const dataType of chcTypes) {
+        const rule = checker.getRule(dataType);
+        expect(rule?.sourceUrl).toBeDefined();
+      }
+    });
+
+    it('should detect stale CHC publications after 3 months', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-05-01'); // 4 months later
+
+      const result = checker.checkDataType('chc_publications', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningLevel).toBe('info');
+    });
+
+    it('should not detect stale CHC publications within 3 months', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-03-01'); // 2 months later
+
+      const result = checker.checkDataType('chc_publications', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(false);
+    });
+
+    it('should detect stale MCO handbook after annual update month', () => {
+      const effectiveDate = new Date('2024-01-01'); // Last year
+      const checkDate = new Date('2025-02-01'); // After January this year
+
+      const result = checker.checkDataType('chc_handbook_upmc', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      // 'warning' because we're past the update month (checkMonth > updateMonth)
+      expect(result.warningLevel).toBe('warning');
+    });
+
+    it('should map chc_publications document type correctly', () => {
+      const doc = {
+        id: 'doc-chc-1',
+        documentType: 'chc_publications',
+        effectiveDate: new Date('2025-01-01'),
+      };
+      const checkDate = new Date('2025-01-15');
+
+      const result = checker.checkDocument(doc, checkDate);
+
+      expect(result).not.toBeNull();
+      expect(result?.dataType).toBe('chc_publications');
+    });
+
+    it('should map chc_handbook document type correctly', () => {
+      const doc = {
+        id: 'doc-chc-2',
+        documentType: 'chc_handbook',
+        effectiveDate: new Date('2025-01-01'),
+      };
+      const checkDate = new Date('2025-01-15');
+
+      const result = checker.checkDocument(doc, checkDate);
+
+      expect(result).not.toBeNull();
+      // Maps to default UPMC handbook type
+      expect(result?.dataType).toBe('chc_handbook_upmc');
+    });
+  });
 });

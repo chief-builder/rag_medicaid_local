@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OIMOpsMemoScraper, OIMHandbookScraper, createOIMScraper } from './oim-scraper.js';
 import { PABulletinScraper, PACodeScraper, createPAScraper } from './pa-bulletin-scraper.js';
+import { CHCPublicationsScraper, CHCHandbookScraper, createCHCScraper } from './chc-scraper.js';
 import { ScrapedItem } from '../types.js';
 
 // Mock fetch globally
@@ -380,5 +381,198 @@ describe('BaseScraper common functionality', () => {
       expect(result.changeType).toBe('content_modified');
       expect(result.newItems.length).toBe(1);
     });
+  });
+});
+
+// Phase 3: CHC Managed Care Scraper Tests
+
+describe('CHCPublicationsScraper', () => {
+  let scraper: CHCPublicationsScraper;
+
+  beforeEach(() => {
+    scraper = new CHCPublicationsScraper();
+    vi.clearAllMocks();
+  });
+
+  describe('extractItems', () => {
+    it('should extract PDF publication links', () => {
+      const html = `
+        <a href="/content/dam/dhs/chc/participant-guide.pdf">CHC Participant Guide</a>
+        <a href="/content/dam/dhs/chc/fair-hearing.pdf">Fair Hearing Information</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.pa.gov/agencies/dhs/');
+
+      expect(items.length).toBe(2);
+      expect(items[0].url).toContain('participant-guide.pdf');
+      expect(items[1].url).toContain('fair-hearing.pdf');
+    });
+
+    it('should extract PA.gov page links', () => {
+      // Uses PDF links since those are the primary extraction pattern
+      const html = `
+        <a href="/agencies/dhs/resources/chc/overview.pdf">CHC Overview</a>
+        <a href="/agencies/dhs/resources/chc/services.pdf">Service Information</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.pa.gov/');
+
+      expect(items.length).toBe(2);
+      expect(items.some((i) => i.url.includes('overview.pdf'))).toBe(true);
+    });
+
+    it('should skip navigation links', () => {
+      const html = `
+        <a href="/content/dam/dhs/chc/guide.pdf">CHC Guide</a>
+        <a href="#top">Back to Top</a>
+        <a href="/home">Home</a>
+        <a href="/content/dam/dhs/chc/manual.pdf">Manual</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.pa.gov/');
+
+      expect(items.length).toBe(2);
+      expect(items.every((i) => !i.title.toLowerCase().includes('home'))).toBe(true);
+    });
+
+    it('should detect document type for fair hearing documents', () => {
+      const html = `
+        <a href="/fair-hearing-info.pdf">Fair Hearing Rights and Procedures</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.pa.gov/');
+
+      expect(items.length).toBe(1);
+      expect(items[0].description).toBe('Fair Hearing');
+    });
+
+    it('should detect document type for handbook documents', () => {
+      const html = `
+        <a href="/member-handbook.pdf">CHC Member Handbook 2025</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.pa.gov/');
+
+      expect(items.length).toBe(1);
+      expect(items[0].description).toBe('Handbook');
+    });
+
+    it('should deduplicate items by URL', () => {
+      const html = `
+        <a href="/document.pdf">Document Title</a>
+        <a href="/document.pdf">Same Document</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.pa.gov/');
+
+      expect(items.length).toBe(1);
+    });
+  });
+
+  describe('scrape', () => {
+    it('should fetch and parse content', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Map([['content-type', 'text/html']]),
+        text: () => Promise.resolve('<a href="/test.pdf">Test Publication</a>'),
+      });
+
+      const result = await scraper.scrape('https://www.pa.gov/chc/publications');
+
+      expect(result.contentHash).toBeDefined();
+      expect(result.items?.length).toBe(1);
+      expect(result.metadata.httpStatus).toBe(200);
+    });
+  });
+});
+
+describe('CHCHandbookScraper', () => {
+  let scraper: CHCHandbookScraper;
+
+  beforeEach(() => {
+    scraper = new CHCHandbookScraper();
+    vi.clearAllMocks();
+  });
+
+  describe('extractItems', () => {
+    it('should extract PDF handbook links', () => {
+      const html = `
+        <a href="/docs/member-handbook-2025.pdf">Member Handbook 2025</a>
+        <a href="/docs/provider-directory.pdf">Provider Directory</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://www.upmchealthplan.com/chc/');
+
+      expect(items.length).toBe(2);
+      expect(items[0].url).toContain('member-handbook-2025.pdf');
+    });
+
+    it('should extract links containing handbook keywords', () => {
+      const html = `
+        <a href="/resources/guide">Member Guide and Handbook</a>
+        <a href="/resources/other">Other Resource</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://example.com/');
+
+      // Should find the handbook link
+      expect(items.some((i) => i.title.includes('Handbook'))).toBe(true);
+    });
+
+    it('should detect UPMC MCO from URL', () => {
+      const html = `<a href="/handbook.pdf">Member Handbook</a>`;
+
+      const items = scraper.extractItems(html, 'https://www.upmchealthplan.com/chc/');
+
+      expect(items.length).toBe(1);
+      expect(items[0].description).toBe('UPMC');
+    });
+
+    it('should detect AmeriHealth MCO from URL', () => {
+      const html = `<a href="/handbook.pdf">Member Handbook</a>`;
+
+      const items = scraper.extractItems(html, 'https://www.amerihealthcaritaschc.com/');
+
+      expect(items.length).toBe(1);
+      expect(items[0].description).toBe('AmeriHealth Caritas');
+    });
+
+    it('should detect PA Health & Wellness MCO from URL', () => {
+      const html = `<a href="/handbook.pdf">Member Handbook</a>`;
+
+      const items = scraper.extractItems(html, 'https://www.pahealthwellness.com/chc/');
+
+      expect(items.length).toBe(1);
+      expect(items[0].description).toBe('PA Health & Wellness');
+    });
+
+    it('should skip navigation links', () => {
+      const html = `
+        <a href="/handbook.pdf">Handbook</a>
+        <a href="/login">Sign In</a>
+        <a href="/home">Home</a>
+      `;
+
+      const items = scraper.extractItems(html, 'https://example.com/');
+
+      expect(items.length).toBe(1);
+    });
+  });
+});
+
+describe('createCHCScraper factory', () => {
+  it('should create CHCPublicationsScraper for chc_publications type', () => {
+    const scraper = createCHCScraper('chc_publications');
+    expect(scraper).toBeInstanceOf(CHCPublicationsScraper);
+  });
+
+  it('should create CHCHandbookScraper for chc_handbook type', () => {
+    const scraper = createCHCScraper('chc_handbook');
+    expect(scraper).toBeInstanceOf(CHCHandbookScraper);
+  });
+
+  it('should throw for unsupported type', () => {
+    expect(() => createCHCScraper('invalid' as never)).toThrow();
   });
 });

@@ -11,7 +11,10 @@ export type SourceType =
   | 'oim_handbook'
   | 'pa_bulletin'
   | 'pa_code'
-  | 'dhs_page';
+  | 'dhs_page'
+  // Phase 3: CHC Managed Care sources
+  | 'chc_publications'
+  | 'chc_handbook';
 
 /**
  * Frequency for checking sources

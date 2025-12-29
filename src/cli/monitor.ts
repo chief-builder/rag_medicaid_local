@@ -249,6 +249,12 @@ program
         case 'pa_code':
           scraper = createPAScraper(sourceType);
           break;
+        case 'chc_publications':
+        case 'chc_handbook': {
+          const { createCHCScraper } = await import('../monitoring/index.js');
+          scraper = createCHCScraper(sourceType);
+          break;
+        }
         default:
           console.error(`Unknown source type: ${sourceType}`);
           process.exit(1);

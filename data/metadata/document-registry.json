@@ -493,6 +493,126 @@
       "monitoringFrequency": "weekly",
       "requiresHtmlScraping": true,
       "isChangeFeed": true
+    },
+    {
+      "filename": "CHC-Publications-Hub",
+      "documentType": "chc_publications",
+      "title": "PA DHS Community HealthChoices Publications Hub",
+      "description": "Official CHC publications including participant guides, fair hearing info, and plan contacts",
+      "targetPrograms": ["CHC_Waiver", "LIFE"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "quarterly",
+      "sourceUrl": "https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/community-healthchoices/publications",
+      "sourceOrg": "PA Department of Human Services",
+      "sourceAuthority": "primary",
+      "legalWeight": "guidance",
+      "sourceFormat": "html_list",
+      "priority": 19,
+      "seniorRelevance": "high",
+      "keyTopics": [
+        "CHC participant rights",
+        "Fair hearing procedures",
+        "Grievance process",
+        "Plan contacts",
+        "Service authorization",
+        "Service coordinator information"
+      ],
+      "monitoringFrequency": "quarterly",
+      "requiresHtmlScraping": true,
+      "keyPhoneNumbers": {
+        "CHC_Helpline": "1-844-824-3655",
+        "IEB": "1-877-550-4227"
+      }
+    },
+    {
+      "filename": "UPMC-CHC-Participant-Handbook",
+      "documentType": "chc_handbook",
+      "title": "UPMC Community HealthChoices Participant Handbook",
+      "description": "UPMC for You CHC member handbook covering benefits, grievances, and service procedures",
+      "targetPrograms": ["CHC_Waiver", "LIFE"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.upmchealthplan.com/chc/member-handbook",
+      "sourceOrg": "UPMC Health Plan",
+      "sourceAuthority": "primary",
+      "legalWeight": "guidance",
+      "sourceFormat": "pdf",
+      "priority": 20,
+      "seniorRelevance": "high",
+      "mcoName": "UPMC",
+      "regionsCovered": ["Southwest", "Southeast", "Lehigh/Capital"],
+      "keyTopics": [
+        "UPMC CHC benefits",
+        "Service authorization",
+        "Grievance procedures",
+        "Fair hearing rights",
+        "Provider directory",
+        "Transportation services",
+        "Service coordinator"
+      ],
+      "keyPhoneNumbers": {
+        "UPMC_CHC_Member_Services": "1-844-833-0523"
+      }
+    },
+    {
+      "filename": "AmeriHealth-CHC-Participant-Handbook",
+      "documentType": "chc_handbook",
+      "title": "AmeriHealth Caritas PA Community HealthChoices Participant Handbook",
+      "description": "AmeriHealth Caritas CHC member handbook covering benefits, grievances, and service procedures",
+      "targetPrograms": ["CHC_Waiver", "LIFE"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.amerihealthcaritaschc.com/member/resources/handbooks",
+      "sourceOrg": "AmeriHealth Caritas Pennsylvania",
+      "sourceAuthority": "primary",
+      "legalWeight": "guidance",
+      "sourceFormat": "pdf",
+      "priority": 21,
+      "seniorRelevance": "high",
+      "mcoName": "AmeriHealth Caritas",
+      "regionsCovered": ["All regions"],
+      "keyTopics": [
+        "AmeriHealth CHC benefits",
+        "Service authorization",
+        "Grievance procedures",
+        "Fair hearing rights",
+        "Provider directory",
+        "Transportation services",
+        "Service coordinator"
+      ],
+      "keyPhoneNumbers": {
+        "AmeriHealth_CHC_Member_Services": "1-855-235-5115"
+      }
+    },
+    {
+      "filename": "PHW-CHC-Participant-Handbook",
+      "documentType": "chc_handbook",
+      "title": "PA Health & Wellness Community HealthChoices Participant Handbook",
+      "description": "PA Health & Wellness CHC member handbook covering benefits, grievances, and service procedures",
+      "targetPrograms": ["CHC_Waiver", "LIFE"],
+      "effectiveDate": "2025-01-01",
+      "updateFrequency": "annually_january",
+      "sourceUrl": "https://www.pahealthwellness.com/members/chc/resources",
+      "sourceOrg": "PA Health & Wellness",
+      "sourceAuthority": "primary",
+      "legalWeight": "guidance",
+      "sourceFormat": "pdf",
+      "priority": 22,
+      "seniorRelevance": "high",
+      "mcoName": "PA Health & Wellness",
+      "regionsCovered": ["All regions"],
+      "keyTopics": [
+        "PHW CHC benefits",
+        "Service authorization",
+        "Grievance procedures",
+        "Fair hearing rights",
+        "Provider directory",
+        "Transportation services",
+        "Service coordinator"
+      ],
+      "keyPhoneNumbers": {
+        "PHW_CHC_Member_Services": "1-844-626-6813"
+      }
     }
   ],
   "webPagesToSave": [
@@ -615,6 +735,37 @@
       "sourceName": "Pennsylvania Code",
       "sourceUrl": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter258/chap258toc.html",
       "note": "Regulatory changes are infrequent but high-impact"
+    },
+    {
+      "dataType": "chc_publications",
+      "updateFrequency": "quarterly",
+      "sourceName": "PA DHS Community HealthChoices",
+      "sourceUrl": "https://www.pa.gov/agencies/dhs/resources/aging-physical-disabilities/community-healthchoices/publications",
+      "note": "Check quarterly for new participant guides and policy updates"
+    },
+    {
+      "dataType": "chc_handbook_upmc",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "UPMC Community HealthChoices",
+      "sourceUrl": "https://www.upmchealthplan.com/chc/member-handbook",
+      "note": "Member handbooks typically updated annually in January"
+    },
+    {
+      "dataType": "chc_handbook_amerihealth",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "AmeriHealth Caritas PA Community HealthChoices",
+      "sourceUrl": "https://www.amerihealthcaritaschc.com/member/resources/handbooks",
+      "note": "Member handbooks typically updated annually in January"
+    },
+    {
+      "dataType": "chc_handbook_phw",
+      "updateFrequency": "annually",
+      "typicalUpdateMonth": 1,
+      "sourceName": "PA Health & Wellness",
+      "sourceUrl": "https://www.pahealthwellness.com/members/chc/resources",
+      "note": "Member handbooks typically updated annually in January"
     }
   ],
   "chesterCountyResources": {

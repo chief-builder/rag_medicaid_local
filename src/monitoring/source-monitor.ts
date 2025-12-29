@@ -14,6 +14,7 @@ import {
 import { BaseScraper, ScraperOptions } from './scrapers/base-scraper.js';
 import { createOIMScraper } from './scrapers/oim-scraper.js';
 import { createPAScraper } from './scrapers/pa-bulletin-scraper.js';
+import { createCHCScraper } from './scrapers/chc-scraper.js';
 
 const logger = createChildLogger('source-monitor');
 
@@ -38,6 +39,9 @@ export class SourceMonitorService {
     this.scrapers.set('oim_handbook', createOIMScraper('oim_handbook'));
     this.scrapers.set('pa_bulletin', createPAScraper('pa_bulletin'));
     this.scrapers.set('pa_code', createPAScraper('pa_code'));
+    // Phase 3: CHC Managed Care scrapers
+    this.scrapers.set('chc_publications', createCHCScraper('chc_publications'));
+    this.scrapers.set('chc_handbook', createCHCScraper('chc_handbook'));
   }
 
   /**
@@ -54,6 +58,9 @@ export class SourceMonitorService {
         case 'pa_bulletin':
         case 'pa_code':
           return createPAScraper(sourceType as 'pa_bulletin' | 'pa_code', options);
+        case 'chc_publications':
+        case 'chc_handbook':
+          return createCHCScraper(sourceType as 'chc_publications' | 'chc_handbook', options);
         default:
           throw new Error(`Unsupported source type: ${sourceType}`);
       }
