@@ -101,7 +101,7 @@ export function getReferral(category: SensitiveCategory): string {
 export function getChesterCountyResources(): string {
   const resources = Object.values(CHESTER_COUNTY_RESOURCES);
   return resources
-    .map((r) => `**${r.name}**\nPhone: ${r.phone}${r.description ? `\n${r.description}` : ''}`)
+    .map((r) => `**${r.name}**\nPhone: ${r.phone}${'description' in r && r.description ? `\n${r.description}` : ''}`)
     .join('\n\n');
 }
 

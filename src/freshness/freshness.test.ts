@@ -232,4 +232,235 @@ describe('FreshnessChecker', () => {
       expect(result.isStale).toBe(false);
     });
   });
+
+  describe('Phase 1 data types - Weekly updates', () => {
+    it('should flag OIM ops memo data as stale after 7 days', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-01-20'); // 19 days later (> 14 days for warning)
+
+      const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningLevel).toBe('warning');
+      expect(result.warningMessage).toContain('weekly');
+    });
+
+    it('should NOT flag OIM ops memo data within 7 days', () => {
+      const effectiveDate = new Date('2025-01-10');
+      const checkDate = new Date('2025-01-15'); // 5 days later
+
+      const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(false);
+      expect(result.warningLevel).toBe('none');
+    });
+
+    it('should flag policy clarifications as stale after 7 days', () => {
+      const effectiveDate = new Date('2025-02-01');
+      const checkDate = new Date('2025-02-12'); // 11 days later
+
+      const result = checker.checkDataType('oim_policy_clarification', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningMessage).toContain('weekly');
+    });
+
+    it('should flag PA Bulletin DHS notices as stale after 7 days', () => {
+      const effectiveDate = new Date('2025-03-01');
+      const checkDate = new Date('2025-03-10'); // 9 days later
+
+      const result = checker.checkDataType('pa_bulletin_dhs', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+    });
+
+    it('should show info level for weekly data 8-14 days old', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-01-10'); // 9 days later
+
+      const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningLevel).toBe('info');
+    });
+
+    it('should show warning level for weekly data over 14 days old', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-01-20'); // 19 days later
+
+      const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningLevel).toBe('warning');
+    });
+  });
+
+  describe('Phase 1 data types - Monthly updates', () => {
+    it('should flag OIM LTC handbook as stale after 1 month', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-03-15'); // ~2.5 months later
+
+      const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningMessage).toContain('monthly');
+    });
+
+    it('should NOT flag OIM LTC handbook within 1 month', () => {
+      const effectiveDate = new Date('2025-01-15');
+      const checkDate = new Date('2025-02-01'); // < 1 month
+
+      const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(false);
+    });
+
+    it('should flag OIM MA handbook as stale after 1 month', () => {
+      const effectiveDate = new Date('2025-02-01');
+      const checkDate = new Date('2025-04-01'); // 2 months later
+
+      const result = checker.checkDataType('oim_ma_handbook', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningMessage).toContain('handbook');
+    });
+
+    it('should show info level for monthly data 2-3 months old', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-03-15'); // ~2.5 months
+
+      const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningLevel).toBe('info');
+    });
+
+    it('should show warning level for monthly data over 3 months old', () => {
+      const effectiveDate = new Date('2025-01-01');
+      const checkDate = new Date('2025-05-15'); // ~4.5 months
+
+      const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
+
+      expect(result.isStale).toBe(true);
+      expect(result.warningLevel).toBe('warning');
+    });
+  });
+
+  describe('Phase 1 data types - As-needed updates', () => {
+    it('should NOT flag PA Code chapter as stale (as-needed schedule)', () => {
+      const effectiveDate = new Date('2024-01-01');
+      const checkDate = new Date('2025-06-01'); // 18 months later
+
+      const result = checker.checkDataType('pa_code_chapter_258', effectiveDate, checkDate);
+
+      // as_needed frequency should not automatically flag as stale
+      expect(result.isStale).toBe(false);
+    });
+  });
+
+  describe('Phase 1 document type mapping', () => {
+    it('should check oim_ltc_handbook document type', () => {
+      const doc = {
+        id: 'doc-1',
+        documentType: 'oim_ltc_handbook',
+        effectiveDate: new Date('2025-01-01'),
+      };
+      const checkDate = new Date('2025-04-01');
+
+      const result = checker.checkDocument(doc, checkDate);
+
+      expect(result).not.toBeNull();
+      expect(result?.dataType).toBe('oim_ltc_handbook');
+      expect(result?.isStale).toBe(true);
+    });
+
+    it('should check oim_ops_memo document type', () => {
+      const doc = {
+        id: 'doc-2',
+        documentType: 'oim_ops_memo',
+        effectiveDate: new Date('2025-01-01'),
+      };
+      const checkDate = new Date('2025-01-15');
+
+      const result = checker.checkDocument(doc, checkDate);
+
+      expect(result).not.toBeNull();
+      expect(result?.dataType).toBe('oim_ops_memo');
+    });
+
+    it('should check pa_code document type', () => {
+      const doc = {
+        id: 'doc-3',
+        documentType: 'pa_code',
+        effectiveDate: new Date('2024-06-01'),
+      };
+      const checkDate = new Date('2025-01-01');
+
+      const result = checker.checkDocument(doc, checkDate);
+
+      expect(result).not.toBeNull();
+      expect(result?.dataType).toBe('pa_code_chapter_258');
+    });
+
+    it('should check pa_bulletin document type', () => {
+      const doc = {
+        id: 'doc-4',
+        documentType: 'pa_bulletin',
+        effectiveDate: new Date('2025-01-01'),
+      };
+      const checkDate = new Date('2025-01-15');
+
+      const result = checker.checkDocument(doc, checkDate);
+
+      expect(result).not.toBeNull();
+      expect(result?.dataType).toBe('pa_bulletin_dhs');
+    });
+  });
+
+  describe('Phase 1 rules configuration', () => {
+    it('should have rules for all Phase 1 data types', () => {
+      const rules = checker.getAllRules();
+      const phase1Types = [
+        'oim_ops_memo',
+        'oim_policy_clarification',
+        'pa_bulletin_dhs',
+        'oim_ltc_handbook',
+        'oim_ma_handbook',
+        'pa_code_chapter_258',
+      ];
+
+      for (const dataType of phase1Types) {
+        const rule = rules.find((r) => r.dataType === dataType);
+        expect(rule).toBeDefined();
+      }
+    });
+
+    it('should have correct update frequency for OIM sources', () => {
+      expect(checker.getRule('oim_ops_memo')?.updateFrequency).toBe('weekly');
+      expect(checker.getRule('oim_policy_clarification')?.updateFrequency).toBe('weekly');
+      expect(checker.getRule('oim_ltc_handbook')?.updateFrequency).toBe('monthly');
+      expect(checker.getRule('oim_ma_handbook')?.updateFrequency).toBe('monthly');
+    });
+
+    it('should have correct update frequency for PA sources', () => {
+      expect(checker.getRule('pa_bulletin_dhs')?.updateFrequency).toBe('weekly');
+      expect(checker.getRule('pa_code_chapter_258')?.updateFrequency).toBe('as_needed');
+    });
+
+    it('should have source URLs for all Phase 1 rules', () => {
+      const phase1Types: DataType[] = [
+        'oim_ops_memo',
+        'oim_policy_clarification',
+        'pa_bulletin_dhs',
+        'oim_ltc_handbook',
+        'oim_ma_handbook',
+        'pa_code_chapter_258',
+      ];
+
+      for (const dataType of phase1Types) {
+        const rule = checker.getRule(dataType);
+        expect(rule?.sourceUrl).toBeDefined();
+      }
+    });
+  });
 });

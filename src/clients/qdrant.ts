@@ -11,6 +11,7 @@ export interface QdrantPayload {
   pageNumber?: number;
   chunkIndex: number;
   metadata: ChunkMetadata;
+  [key: string]: unknown; // Index signature for Qdrant compatibility
 }
 
 /**

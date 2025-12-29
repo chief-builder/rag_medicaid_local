@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import express from 'express';
+import request from 'supertest';
+import type { Express } from 'express';
 
 // Mock the dependencies before importing the server
 vi.mock('../retrieval/pipeline.js', () => ({
@@ -71,6 +72,7 @@ vi.mock('../config/index.js', () => ({
     qdrant: {
       url: 'http://localhost:6333',
       collection: 'test',
+      embeddingDimension: 1024,
     },
     postgres: {
       host: 'localhost',
@@ -106,13 +108,13 @@ vi.mock('../utils/logger.js', () => ({
 
 // Import after mocks are set up
 import { createApiServer } from './server.js';
+import { getConfig } from '../config/index.js';
 
 describe('API Server', () => {
-  let app: express.Express;
+  let app: Express;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const { getConfig } = require('../config/index.js');
     const config = getConfig();
     const server = createApiServer(config);
     app = server.app;
@@ -120,7 +122,7 @@ describe('API Server', () => {
 
   describe('GET /health', () => {
     it('should return health status', async () => {
-      const response = await makeRequest(app, 'GET', '/health');
+      const response = await request(app).get('/health');
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('healthy');
@@ -131,9 +133,9 @@ describe('API Server', () => {
 
   describe('POST /query', () => {
     it('should process a query and return answer with citations', async () => {
-      const response = await makeRequest(app, 'POST', '/query', {
-        query: 'What are Medicaid eligibility requirements?',
-      });
+      const response = await request(app)
+        .post('/query')
+        .send({ query: 'What are Medicaid eligibility requirements?' });
 
       expect(response.status).toBe(200);
       expect(response.body.answer).toBe('Test answer');
@@ -143,16 +145,14 @@ describe('API Server', () => {
     });
 
     it('should return 400 for missing query', async () => {
-      const response = await makeRequest(app, 'POST', '/query', {});
+      const response = await request(app).post('/query').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Query is required');
     });
 
     it('should return 400 for invalid query type', async () => {
-      const response = await makeRequest(app, 'POST', '/query', {
-        query: 123,
-      });
+      const response = await request(app).post('/query').send({ query: 123 });
 
       expect(response.status).toBe(400);
     });
@@ -160,9 +160,9 @@ describe('API Server', () => {
 
   describe('POST /ingest/file', () => {
     it('should ingest a file', async () => {
-      const response = await makeRequest(app, 'POST', '/ingest/file', {
-        filepath: '/path/to/test.pdf',
-      });
+      const response = await request(app)
+        .post('/ingest/file')
+        .send({ filepath: '/path/to/test.pdf' });
 
       expect(response.status).toBe(200);
       expect(response.body.documentId).toBe('doc-1');
@@ -171,7 +171,7 @@ describe('API Server', () => {
     });
 
     it('should return 400 for missing filepath', async () => {
-      const response = await makeRequest(app, 'POST', '/ingest/file', {});
+      const response = await request(app).post('/ingest/file').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('filepath is required');
@@ -180,7 +180,7 @@ describe('API Server', () => {
 
   describe('POST /ingest/directory', () => {
     it('should ingest a directory', async () => {
-      const response = await makeRequest(app, 'POST', '/ingest/directory', {
+      const response = await request(app).post('/ingest/directory').send({
         dirPath: '/path/to/pdfs',
         recursive: true,
       });
@@ -191,7 +191,7 @@ describe('API Server', () => {
     });
 
     it('should return 400 for missing dirPath', async () => {
-      const response = await makeRequest(app, 'POST', '/ingest/directory', {});
+      const response = await request(app).post('/ingest/directory').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('dirPath is required');
@@ -200,7 +200,7 @@ describe('API Server', () => {
 
   describe('GET /metrics', () => {
     it('should return query metrics', async () => {
-      const response = await makeRequest(app, 'GET', '/metrics');
+      const response = await request(app).get('/metrics');
 
       expect(response.status).toBe(200);
       expect(response.body.totalQueries).toBe(100);
@@ -209,79 +209,3 @@ describe('API Server', () => {
     });
   });
 });
-
-// Helper function to make requests to the Express app
-async function makeRequest(
-  app: express.Express,
-  method: 'GET' | 'POST',
-  path: string,
-  body?: object
-): Promise<{ status: number; body: Record<string, unknown> }> {
-  return new Promise((resolve) => {
-    const req = {
-      method,
-      url: path,
-      headers: { 'content-type': 'application/json' },
-      body: body || {},
-    };
-
-    const res = {
-      statusCode: 200,
-      _body: {} as Record<string, unknown>,
-      status(code: number) {
-        this.statusCode = code;
-        return this;
-      },
-      json(data: Record<string, unknown>) {
-        this._body = data;
-        resolve({ status: this.statusCode, body: this._body });
-      },
-      on(_event: string, _callback: () => void) {
-        // Mock event handler
-      },
-    };
-
-    // Find the route handler
-    const layers = (app._router?.stack || []).filter(
-      (layer: { route?: { path: string; methods: Record<string, boolean> } }) =>
-        layer.route?.path === path &&
-        layer.route?.methods[method.toLowerCase()]
-    );
-
-    if (layers.length === 0) {
-      resolve({ status: 404, body: { error: 'Not found' } });
-      return;
-    }
-
-    // Execute middleware and handler
-    const stack = [...(app._router?.stack || [])];
-    let idx = 0;
-
-    const next = (err?: Error) => {
-      if (err) {
-        resolve({ status: 500, body: { error: err.message } });
-        return;
-      }
-
-      const layer = stack[idx++];
-      if (!layer) {
-        resolve({ status: 404, body: { error: 'Not found' } });
-        return;
-      }
-
-      try {
-        if (layer.route?.path === path && layer.route?.methods[method.toLowerCase()]) {
-          layer.handle(req, res, next);
-        } else if (!layer.route) {
-          layer.handle(req, res, next);
-        } else {
-          next();
-        }
-      } catch (e) {
-        next(e as Error);
-      }
-    };
-
-    next();
-  });
-}
