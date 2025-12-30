@@ -1,9 +1,9 @@
 # Pennsylvania Medicaid Source Enhancement Plan
 
-> **Status**: DRAFT - Updated with decisions, awaiting implementation approval
+> **Status**: IMPLEMENTED - Monitoring infrastructure complete
 > **Created**: 2025-12-27
-> **Updated**: 2025-12-29
-> **Branch**: `claude/review-project-docs-RkWHL`
+> **Updated**: 2025-12-30
+> **Implementation**: Source monitoring system operational with scrapers for all planned source types
 
 ---
 
@@ -410,41 +410,49 @@ If you're reading this after January 2026, updated figures may be available.
 
 ---
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Critical Source Additions (Estimated: 1-2 sessions)
+### Phase 1: Critical Source Additions - COMPLETE
 
-1. Add OIM LTC Handbook to document registry
-2. Add PA Code Chapter 258 to document registry
-3. Create tracking structure for OIM ops memos
-4. Ingest new documents
+- [x] Added OIM LTC Handbook to document registry
+- [x] Added PA Code Chapter 258 to document registry
+- [x] Created tracking structure for OIM ops memos
+- [x] Source monitoring database tables created (`source_monitors`, `source_change_log`)
 
-### Phase 2: Change Feed Monitoring (Estimated: 1-2 sessions)
+### Phase 2: Change Feed Monitoring - COMPLETE
 
-1. Add `weekly` update frequency type
-2. Create monitoring entries for OIM memos and PA Bulletin
-3. Add new data types to FreshnessChecker
-4. Document monitoring procedures in README
+- [x] Added `weekly` update frequency type
+- [x] Created monitoring entries for OIM memos and PA Bulletin
+- [x] Implemented scrapers: `oim-scraper.ts`, `pa-bulletin-scraper.ts`, `chc-scraper.ts`
+- [x] Added `pnpm monitor` CLI commands
+- [x] Documented monitoring procedures in `MONITORING_SOP.md`
 
-### Phase 3: CHC Managed Care Sources (Estimated: 1 session)
+### Phase 3: CHC Managed Care Sources - COMPLETE
 
-1. Add CHC Publications Hub to registry
-2. Identify and add key CHC participant handbooks
-3. Update document types enum
+- [x] Added CHC Publications Hub to registry
+- [x] Added MCO participant handbooks (UPMC, AmeriHealth Caritas, PA Health & Wellness)
+- [x] Updated document types enum in `src/types/index.ts`
+- [x] Created `chc-scraper.ts` for CHC source monitoring
 
-### Phase 4: Versioning & Freshness Display (Estimated: 1-2 sessions)
+### Phase 4: Versioning & Freshness Display - COMPLETE
 
-1. Add new metadata fields to schema
-2. Update document registry with hashes and retrieval dates
-3. Modify answer generation to include freshness context
-4. Add freshness warnings to sensitive topics
+- [x] Added metadata fields to schema (`sourceAuthority`, `legalWeight`, `sourceFormat`)
+- [x] Implemented `FreshnessChecker` with 7+ data types
+- [x] Implemented `FreshnessDisplayService` for response augmentation
+- [x] Added freshness warnings to responses
 
-### Phase 5: Documentation & Monitoring SOP (Estimated: 1 session)
+### Phase 5: Documentation & Monitoring SOP - COMPLETE
 
-1. Update README with new source list
-2. Create monitoring cadence checklist
-3. Document procedures for checking change feeds
-4. Add "look_back_period" guardrail category
+- [x] Updated README with source list and monitoring commands
+- [x] Created `MONITORING_SOP.md` with detailed procedures
+- [x] Documented monitoring cadence (weekly/monthly/quarterly/annually)
+- [x] Added 5 guardrail categories (estate_planning, asset_transfer, spend_down, spousal_complex, appeals)
+
+### Remaining Work (Future Enhancement)
+
+1. **Auto-ingestion** - Automatically ingest new documents when changes detected
+2. **Look-back period guardrail** - Add explicit 60-month/5-year warning category
+3. **Mental health keywords** - Enhance emotional language detection
 
 ---
 

@@ -1,6 +1,7 @@
 # Source Monitoring Standard Operating Procedures
 
 > **Purpose**: Ensure Pennsylvania Medicaid RAG sources stay current and accurate.
+> **Last Updated**: 2025-12-30
 
 ## Monitoring Cadence Overview
 
@@ -257,8 +258,66 @@ If document ingestion fails:
 
 ---
 
+## CLI Commands Reference
+
+### Monitor Commands
+
+```bash
+# Check monitor status (summary of all monitors)
+pnpm monitor status
+
+# List all monitored sources
+pnpm monitor list
+
+# Check all sources for changes (respects schedule)
+pnpm monitor check
+
+# Force check a specific source
+pnpm monitor check --source "OIM Operations Memoranda" --force
+
+# Check only sources of a specific frequency
+pnpm monitor check --frequency weekly
+pnpm monitor check --frequency monthly
+pnpm monitor check --frequency quarterly
+
+# View recent change history
+pnpm monitor changes
+pnpm monitor changes --limit 10
+
+# Test scrape a URL without saving
+pnpm monitor test-scrape "<URL>" --type oim_ops_memo
+pnpm monitor test-scrape "<URL>" --type pa_bulletin
+pnpm monitor test-scrape "<URL>" --type chc_publications
+```
+
+### Ingestion Commands
+
+```bash
+# Ingest a single PDF
+pnpm ingest file /path/to/document.pdf
+
+# Ingest a directory of PDFs
+pnpm ingest directory /path/to/pdfs --recursive
+
+# Check ingestion stats
+pnpm ingest stats
+```
+
+### Query Commands
+
+```bash
+# Ask a question
+pnpm query ask "What is the LIFE program?"
+
+# View query metrics
+pnpm query metrics
+```
+
+---
+
 ## Document Version History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2025-01-01 | System | Initial SOP creation |
+| 1.1 | 2025-12-30 | System | Added CLI commands reference, updated commands |

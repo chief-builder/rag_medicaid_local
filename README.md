@@ -75,36 +75,42 @@ Instead, it equips users with accurate information so they can:
 - **Automated Source Monitoring**: Weekly/monthly change detection for OIM memos and PA Bulletin
 - **Regulatory Text Chunking**: Specialized handling for PA Code and OIM Handbook structure
 
-### Ingested Documents (22 Sources)
+### Document Sources
 
-#### Primary Sources (PA DHS / PA Code)
-- OIM Long-Term Care Handbook (HTML - core eligibility policy)
-- OIM Medical Assistance Eligibility Handbook (HTML)
-- OIM Operations Memoranda (weekly change feed)
-- OIM Policy Clarifications (weekly change feed)
-- PA Code Chapter 258 - Estate Recovery (regulatory text)
-- PA Bulletin DHS Notices (weekly legal notices)
-- PA DHS Long-Term Care Information
+#### Ingested PDF Documents (12 Documents, ~480 Chunks)
+
+**Primary Sources (PA DHS / PA Aging):**
 - PA DHS Estate Recovery FAQ
-- PA DHS LIFE Program Materials
+- PA DHS Long-Term Care Information
 - PA DHS Healthy Horizons
+- PA DHS Estate Recovery Info
+- PA PACE/PACENET Provider Guide 2025
+- PA Aging PACE Overview
+- LIFE Program Materials (OCR processed)
 
-#### CHC Managed Care Sources (Phase 3)
-- PA DHS CHC Publications Hub (quarterly)
-- UPMC Community HealthChoices Participant Handbook (annually)
-- AmeriHealth Caritas PA CHC Participant Handbook (annually)
-- PA Health & Wellness CHC Participant Handbook (annually)
-
-#### Secondary Sources (PHLP)
+**Secondary Sources (PHLP):**
 - PHLP 2025 MSP Guide (Medicare Savings Programs)
 - PHLP 2025 Income Limits
 - PHLP CHC Waiver Eligibility Guide
 - PHLP Medicare/Medicaid Dual Eligible Guide
-- PHLP Extra Help/LIS Guide
+- PHLP 2025 LIS/Extra Help Guide
 
-#### Prescription Assistance
-- PA PACE/PACENET Provider Guide
-- PA Aging PACE Overview
+#### Monitored HTML Sources (10 Sources)
+
+The system monitors these Pennsylvania official sources for changes:
+
+| Source | Type | Frequency |
+|--------|------|-----------|
+| OIM Operations Memoranda | Policy updates | Weekly |
+| OIM Policy Clarifications | Rule clarifications | Weekly |
+| PA Bulletin DHS Notices | Legal notices | Weekly |
+| OIM LTC Handbook | Core LTC policy | Monthly |
+| OIM MA Handbook | MA eligibility | Monthly |
+| PA Code Chapter 258 | Estate recovery law | Monthly |
+| CHC Publications Hub | CHC materials | Quarterly |
+| UPMC CHC Participant Handbook | MCO handbook | Annually |
+| AmeriHealth Caritas CHC Handbook | MCO handbook | Annually |
+| PA Health & Wellness CHC Handbook | MCO handbook | Annually |
 
 ## Architecture
 
@@ -507,6 +513,21 @@ GET /metrics
 # Run all tests
 pnpm test
 
+# Run unit tests only
+pnpm test:unit
+
+# Run integration tests (requires running services)
+pnpm test:integration
+
+# Run end-to-end tests
+pnpm test:e2e
+
+# Run performance benchmarks
+pnpm test:perf
+
+# Run real service performance benchmarks
+pnpm test:perf:real
+
 # Run tests in watch mode
 pnpm test:watch
 
@@ -514,69 +535,110 @@ pnpm test:watch
 pnpm test:coverage
 ```
 
+### Performance Benchmarks
+
+Typical query pipeline performance (with local LM Studio):
+
+| Component | Avg Latency | % of Pipeline |
+|-----------|-------------|---------------|
+| Embedding Generation | ~15ms | 0.5% |
+| Vector Search (Qdrant) | ~5ms | 0.2% |
+| BM25 Search (PostgreSQL) | ~1ms | 0.0% |
+| LLM Generation | ~2,900ms | 99.3% |
+| **Total Pipeline** | **~3,000ms** | 100% |
+| Cached Query | <1ms | N/A |
+
+See `docs/performance-benchmarks.md` for detailed benchmark results.
+
 ### Project Structure
 
 ```
 src/
 ├── api/                 # Express API server
-│   └── server.ts
+│   ├── server.ts        # HTTP server with /query, /ingest, /health endpoints
+│   └── server.test.ts   # API endpoint tests
 ├── cli/                 # CLI commands
-│   ├── ingest.ts
-│   ├── query.ts
+│   ├── ingest.ts        # Document ingestion CLI
+│   ├── query.ts         # Query CLI interface
 │   └── monitor.ts       # Source monitoring CLI
 ├── clients/             # External service clients
 │   ├── lm-studio.ts     # LM Studio OpenAI-compatible client
-│   ├── postgres.ts      # PostgreSQL client
+│   ├── postgres.ts      # PostgreSQL BM25 search & metadata
 │   └── qdrant.ts        # Qdrant vector store client
 ├── config/              # Configuration loading
-│   └── index.ts
-├── db/                  # Database migrations
-│   └── migrate.ts
+│   └── index.ts         # Config with Zod validation
+├── db/                  # Database operations
+│   └── migrate.ts       # Database schema migrations
 ├── freshness/           # Data freshness tracking
-│   └── checker.ts       # FPL, MSP, weekly/monthly staleness detection
+│   ├── index.ts         # Module exports
+│   ├── checker.ts       # FPL, MSP, weekly/monthly staleness detection
+│   └── display.ts       # Freshness display service
 ├── guardrails/          # Sensitive topic detection
 │   ├── index.ts         # GuardrailsEngine
-│   ├── detector.ts      # Keyword-based topic detection
-│   └── disclaimers.ts   # Disclaimer templates and referrals
+│   ├── detector.ts      # Keyword-based topic detection (5 categories)
+│   └── disclaimers.ts   # Disclaimer templates and professional referrals
 ├── ingestion/           # Document ingestion pipeline
-│   ├── chunker.ts       # Markdown chunking
-│   ├── pdf-processor.ts # PDF to Markdown conversion
-│   ├── regulatory-chunker.ts  # PA Code/OIM legal text chunking
-│   └── pipeline.ts      # Complete ingestion pipeline
+│   ├── pipeline.ts      # Complete ingestion orchestration
+│   ├── chunker.ts       # Markdown-aware chunking (512 char + 64 overlap)
+│   ├── pdf-processor.ts # PDF to Markdown with OCR support
+│   └── regulatory-chunker.ts  # PA Code/OIM legal text chunking
 ├── monitoring/          # Source change monitoring
+│   ├── index.ts         # Monitor orchestration
 │   ├── types.ts         # Monitor types and interfaces
-│   ├── source-monitor.ts  # Monitoring service
+│   ├── source-monitor.ts  # Core monitoring service
 │   └── scrapers/        # Source-specific scrapers
-│       ├── base-scraper.ts      # Abstract scraper base
-│       ├── oim-scraper.ts       # OIM memos/handbooks
-│       └── pa-bulletin-scraper.ts  # PA Bulletin/PA Code
+│       ├── base-scraper.ts        # Abstract scraper base class
+│       ├── oim-scraper.ts         # OIM memos/handbooks scraper
+│       ├── pa-bulletin-scraper.ts # PA Bulletin/PA Code scraper
+│       └── chc-scraper.ts         # CHC publications scraper
 ├── prompts/             # LLM prompt templates
-│   └── senior-assistant.ts  # Senior-focused prompts
+│   └── senior-assistant.ts  # Senior-focused prompts with Chester County resources
 ├── retrieval/           # Query retrieval pipeline
-│   ├── fusion.ts        # RRF fusion algorithm
-│   ├── reranker.ts      # LLM-based reranking
-│   └── pipeline.ts      # Complete retrieval pipeline with guardrails
+│   ├── pipeline.ts      # Complete retrieval pipeline with guardrails
+│   ├── fusion.ts        # RRF (Reciprocal Rank Fusion) algorithm
+│   └── reranker.ts      # LLM-based listwise reranking
 ├── types/               # TypeScript types
-│   └── index.ts
+│   └── index.ts         # Document, Chunk, Config, Response schemas
 ├── utils/               # Utility functions
-│   ├── hash.ts
-│   ├── logger.ts
+│   ├── logger.ts        # Pino logging setup
+│   ├── hash.ts          # MD5 hashing for deduplication
 │   └── text-sanitizer.ts  # PostgreSQL encoding fixes
-└── index.ts             # Main entry point
+└── index.ts             # Main entry point - starts Express server
 
 tests/
 ├── e2e/                 # End-to-end tests
-│   └── senior-queries.e2e.test.ts
+│   ├── senior-queries.e2e.test.ts    # Senior intent query testing
+│   ├── golden-answers.e2e.test.ts    # Expected response validation
+│   └── full-pipeline.e2e.test.ts     # Complete pipeline testing
+├── integration/         # Integration tests with real services
+│   ├── infrastructure.test.ts        # Service health & connectivity
+│   ├── ingestion-pipeline.test.ts    # Full ingestion with DB
+│   └── query-pipeline.test.ts        # Full query with retrieval
+├── performance/         # Benchmark tests
+│   ├── latency.bench.ts      # Query latency benchmarking
+│   └── real-services.bench.ts # Real service performance testing
 ├── fixtures/            # Test data
 │   ├── queries/         # Senior intent test queries
 │   └── expected/        # Golden answers for validation
 └── helpers/             # Test utilities
-    ├── mock-lm-studio.ts
-    └── test-fixtures.ts
+    ├── mock-lm-studio.ts    # LM Studio mock
+    ├── mock-postgres.ts     # PostgreSQL mock
+    ├── mock-qdrant.ts       # Qdrant mock
+    ├── test-db.ts           # Test database setup
+    └── test-fixtures.ts     # Shared test data
 
 scripts/
-└── migrations/          # Database migrations
-    └── 002_senior_focus.sql  # Senior-focused schema additions
+├── init-db.sql              # Database schema initialization
+├── download-priority-docs.sh # PDF download script
+├── download-webpages.ts     # Web page scraping
+├── reset-and-ingest.sh      # Reset database and re-ingest all documents
+└── trace-query-pipeline.ts  # Query pipeline debugging
+
+docs/
+├── MONITORING_SOP.md         # Source monitoring procedures
+├── SOURCE_ENHANCEMENT_PLAN.md # Source coverage roadmap
+├── performance-benchmarks.md # Performance metrics
+└── query-test-results.md     # Query test results
 ```
 
 ## Troubleshooting
