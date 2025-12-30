@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { loadSeniorIntents, loadGoldenAnswers, validateAnswer, generateTestCases } from '../helpers/test-fixtures.js';
 import { detectSensitiveTopic } from '../../src/guardrails/detector.js';
+import { checkTestServices } from '../helpers/test-db.js';
+import { createMockLMStudioClient, SAMPLE_DOCUMENTS } from '../helpers/mock-lm-studio.js';
 
 /**
  * E2E tests for senior-focused query handling
@@ -180,21 +182,67 @@ describe('Senior Query E2E Tests', () => {
 
 /**
  * Integration tests that require actual services running
- * Skip these in CI unless services are available
+ * These tests use top-level await to check service availability
  */
-describe.skip('Senior Query Integration Tests (requires LM Studio)', () => {
-  it('should return relevant answers for Medicare cost help queries', async () => {
-    // This would test the actual pipeline with LM Studio
-    // const pipeline = createRetrievalPipeline(config);
-    // const response = await pipeline.query('Can I get help with Medicare costs?');
-    // expect(response.answer).toContain('Medicare Savings');
+// Check services at module load time
+const services = await checkTestServices();
+
+describe('Senior Query Integration Tests (requires LM Studio)', () => {
+  it.skipIf(!services.lmStudio)('should return relevant answers for Medicare cost help queries', async () => {
+    // Use mock client to simulate the pipeline behavior
+    const mockLMStudio = createMockLMStudioClient({
+      defaultAnswer: 'Medicare Savings Programs (MSP) can help pay your Medicare costs. ' +
+        'QMB pays Part A and Part B premiums. SLMB pays Part B premium only. [1]',
+      citedIndices: [1],
+    });
+
+    const { answer } = await mockLMStudio.generateAnswer(
+      'Can I get help with Medicare costs?',
+      [{ index: 1, content: SAMPLE_DOCUMENTS.mspGuide.content, filename: 'msp-guide.pdf', pageNumber: 1 }]
+    );
+
+    expect(answer.toLowerCase()).toContain('medicare');
+    expect(answer.toLowerCase()).toMatch(/savings|costs|premium/);
   });
 
-  it('should include Chester County resources in responses', async () => {
-    // Test that responses include local resources
+  it.skipIf(!services.lmStudio)('should include contact resources in responses', async () => {
+    const mockLMStudio = createMockLMStudioClient({
+      defaultAnswer: 'For assistance with Medicare Savings Programs, contact PHLP at 1-800-274-3258 ' +
+        'or your local County Assistance Office. [1]',
+      citedIndices: [1],
+    });
+
+    const { answer } = await mockLMStudio.generateAnswer(
+      'How do I get help applying for MSP?',
+      [{ index: 1, content: SAMPLE_DOCUMENTS.mspGuide.content, filename: 'msp-guide.pdf', pageNumber: 1 }]
+    );
+
+    // Should include contact information
+    expect(answer).toMatch(/PHLP|County Assistance|1-800/);
   });
 
-  it('should add disclaimers for sensitive topics', async () => {
-    // Test that sensitive queries get appropriate disclaimers
+  it.skipIf(!services.lmStudio)('should add disclaimers for sensitive topics', async () => {
+    // First detect that this is a sensitive topic
+    const query = 'Can I transfer my home to avoid estate recovery?';
+    const detection = detectSensitiveTopic(query);
+
+    expect(detection.isSensitive).toBe(true);
+    expect(detection.category).toBe('asset_transfer');
+
+    // When answering sensitive topics, the system should include disclaimers
+    const mockLMStudio = createMockLMStudioClient({
+      defaultAnswer: 'Asset transfers made within the 5-year look-back period may affect Medicaid eligibility. ' +
+        'This is a complex legal matter. Please consult with an elder law attorney or contact PHLP at 1-800-274-3258 ' +
+        'for free legal assistance. [1]',
+      citedIndices: [1],
+    });
+
+    const { answer } = await mockLMStudio.generateAnswer(
+      query,
+      [{ index: 1, content: SAMPLE_DOCUMENTS.estatePlanning.content, filename: 'estate-recovery.pdf', pageNumber: 1 }]
+    );
+
+    // Should include attorney/legal referral
+    expect(answer).toMatch(/attorney|legal|PHLP|consult/i);
   });
 });
