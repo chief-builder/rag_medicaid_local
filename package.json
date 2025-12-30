@@ -17,6 +17,7 @@
     "query": "tsx src/cli/query.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
+    "docker:down:clean": "./scripts/docker-down-clean.sh",
     "db:migrate": "tsx src/db/migrate.ts",
     "download:pdfs": "./scripts/download-priority-docs.sh",
     "download:webpages": "tsx scripts/download-webpages.ts",
