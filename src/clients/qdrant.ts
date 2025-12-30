@@ -230,6 +230,13 @@ export class QdrantStore {
         status: info.status,
       };
     } catch (error) {
+      // Check if collection doesn't exist (404)
+      if (error instanceof Error && 'status' in error && (error as { status?: number }).status === 404) {
+        return {
+          vectorCount: 0,
+          status: 'not_created',
+        };
+      }
       logger.error({ error }, 'Failed to get collection info');
       throw new QdrantError('Failed to get collection info', error);
     }

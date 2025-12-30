@@ -89,6 +89,11 @@ program
       console.log('Ingestion Statistics:');
       console.log(`  Total Documents: ${stats.documentCount}`);
       console.log(`  Total Vectors: ${stats.vectorCount}`);
+
+      if (stats.documentCount === 0 && stats.vectorCount === 0) {
+        console.log('\nNo documents have been ingested yet.');
+        console.log('Run "pnpm ingest file <path>" or "pnpm ingest directory <path>" to ingest documents.');
+      }
     } catch (error) {
       console.error('Failed to get stats:', error);
       process.exit(1);
