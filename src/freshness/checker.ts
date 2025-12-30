@@ -285,7 +285,7 @@ export class FreshnessChecker {
     switch (rule.updateFrequency) {
       case 'annually_january':
       case 'annually_april':
-      case 'annually_october':
+      case 'annually_october': {
         const updateMonth = rule.typicalUpdateMonth || 1;
 
         // If we're in a new year and past the update month, data may be stale
@@ -304,8 +304,9 @@ export class FreshnessChecker {
           nextExpectedUpdate = new Date(checkYear + 1, updateMonth - 1, 1);
         }
         break;
+      }
 
-      case 'quarterly':
+      case 'quarterly': {
         // Check if more than 3 months old
         const monthsDiffQuarterly = (checkYear - effectiveYear) * 12 + (checkMonth - (effectiveDate.getMonth() + 1));
         if (monthsDiffQuarterly > 3) {
@@ -314,8 +315,9 @@ export class FreshnessChecker {
           warningMessage = `This ${formatDataType(rule.dataType)} may be outdated. Contact information should be verified quarterly.`;
         }
         break;
+      }
 
-      case 'monthly':
+      case 'monthly': {
         // Check if more than 1 month old
         const monthsDiffMonthly = (checkYear - effectiveYear) * 12 + (checkMonth - (effectiveDate.getMonth() + 1));
         if (monthsDiffMonthly > 1) {
@@ -324,8 +326,9 @@ export class FreshnessChecker {
           warningMessage = `This ${formatDataType(rule.dataType)} may be outdated. Policy handbooks should be checked monthly.`;
         }
         break;
+      }
 
-      case 'weekly':
+      case 'weekly': {
         // Check if more than 1 week old (approximately 7 days)
         const daysDiff = Math.floor((checkDate.getTime() - effectiveDate.getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff > 7) {
@@ -334,6 +337,7 @@ export class FreshnessChecker {
           warningMessage = `This ${formatDataType(rule.dataType)} may be outdated. This source should be checked weekly for updates.`;
         }
         break;
+      }
 
       case 'as_needed':
         // No automatic staleness for as-needed data

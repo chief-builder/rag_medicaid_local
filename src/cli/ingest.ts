@@ -5,7 +5,8 @@ import { getConfig } from '../config/index.js';
 import { createIngestionPipeline } from '../ingestion/pipeline.js';
 import { createChildLogger } from '../utils/logger.js';
 
-const logger = createChildLogger('cli-ingest');
+// Logger available for future debugging
+createChildLogger('cli-ingest');
 
 const program = new Command();
 

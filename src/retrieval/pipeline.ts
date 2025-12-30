@@ -1,12 +1,10 @@
 import {
   Config,
   SearchResult,
-  FusedResult,
   RerankedResult,
   Citation,
   AnswerWithCitations,
   QueryResponse,
-  ResponseFreshnessInfo,
 } from '../types/index.js';
 import { hashString } from '../utils/hash.js';
 import { createChildLogger } from '../utils/logger.js';
@@ -38,6 +36,7 @@ export class RetrievalPipeline {
   private freshnessDisplay: FreshnessDisplayService;
   private documentMetadataCache: Map<string, DocumentMetadata> = new Map();
   private metadataCacheInitialized = false;
+  private metadataCacheInitPromise: Promise<void> | null = null;
 
   constructor(config: Config) {
     this.config = config;
@@ -47,6 +46,17 @@ export class RetrievalPipeline {
     this.reranker = createReranker(this.lmStudio);
     this.guardrails = getGuardrailsEngine();
     this.freshnessDisplay = getFreshnessDisplayService();
+  }
+
+  /**
+   * Invalidate the document metadata cache.
+   * Should be called after ingesting new documents to ensure fresh metadata.
+   */
+  invalidateMetadataCache(): void {
+    this.metadataCacheInitialized = false;
+    this.documentMetadataCache.clear();
+    this.metadataCacheInitPromise = null;
+    logger.debug('Document metadata cache invalidated');
   }
 
   /**
@@ -250,9 +260,13 @@ export class RetrievalPipeline {
       });
 
     // Calculate confidence based on rerank scores and citation count
-    const avgRerankScore =
-      results.reduce((sum, r) => sum + r.rerankScore, 0) / results.length;
-    const citationRatio = citations.length / results.length;
+    // Guard against division by zero when no results
+    const avgRerankScore = results.length > 0
+      ? results.reduce((sum, r) => sum + r.rerankScore, 0) / results.length
+      : 0;
+    const citationRatio = results.length > 0
+      ? citations.length / results.length
+      : 0;
     const confidence = Math.min(
       (avgRerankScore * 0.6 + citationRatio * 0.4) * 100,
       100
@@ -323,12 +337,27 @@ export class RetrievalPipeline {
 
   /**
    * Ensure document metadata cache is initialized
+   * Uses a promise to prevent race conditions from concurrent initializations
    */
   private async ensureMetadataCache(): Promise<void> {
     if (this.metadataCacheInitialized) {
       return;
     }
 
+    // If initialization is already in progress, wait for it
+    if (this.metadataCacheInitPromise) {
+      return this.metadataCacheInitPromise;
+    }
+
+    // Start initialization and store the promise
+    this.metadataCacheInitPromise = this.initializeMetadataCache();
+    return this.metadataCacheInitPromise;
+  }
+
+  /**
+   * Internal method to actually initialize the metadata cache
+   */
+  private async initializeMetadataCache(): Promise<void> {
     try {
       // Get system ingestion date
       const lastIngestionDate = await this.postgres.getLastIngestionDate();
@@ -353,6 +382,9 @@ export class RetrievalPipeline {
     } catch (error) {
       logger.error({ error }, 'Failed to initialize metadata cache');
       // Don't throw, freshness info is non-critical
+    } finally {
+      // Clear the promise so future attempts can retry if needed
+      this.metadataCacheInitPromise = null;
     }
   }
 

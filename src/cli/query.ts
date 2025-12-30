@@ -6,7 +6,8 @@ import { getConfig } from '../config/index.js';
 import { createRetrievalPipeline } from '../retrieval/pipeline.js';
 import { createChildLogger } from '../utils/logger.js';
 
-const logger = createChildLogger('cli-query');
+// Logger available for future debugging
+createChildLogger('cli-query');
 
 const program = new Command();
 

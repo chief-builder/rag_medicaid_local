@@ -220,16 +220,6 @@ Instead, it equips users with accurate information so they can:
 | Rerank | `qwen2.5-vl-7b-instruct` | Listwise relevance reranking |
 | Answer | `qwen2.5-vl-7b-instruct` | Generate grounded answer with citations |
 
-### Model Summary
-
-| Step | Model | Purpose |
-|------|-------|---------|
-| PDF OCR | `allenai/olmocr-2-7b` (optional) | Convert scanned PDF pages to markdown |
-| Embed (Ingestion) | `nomic-embed-text-v1.5` | Convert chunks to 768-dim vectors |
-| Embed (Query) | `nomic-embed-text-v1.5` | Convert query to 768-dim vector |
-| Rerank | `qwen2.5-vl-7b-instruct` | Listwise relevance reranking |
-| Answer | `qwen2.5-vl-7b-instruct` | Generate grounded answer with citations |
-
 ## Prerequisites
 
 - Node.js 20+

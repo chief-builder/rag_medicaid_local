@@ -1,11 +1,9 @@
-import { readdir, stat, writeFile, mkdir } from 'fs/promises';
+import { readdir, writeFile, mkdir } from 'fs/promises';
 import { join, basename, extname } from 'path';
-import { v4 as uuid } from 'uuid';
 import {
   Config,
   Document,
   Chunk,
-  ChunkInput,
   RagError,
 } from '../types/index.js';
 import { hashFile, hashString } from '../utils/hash.js';

@@ -10,20 +10,25 @@ describe('FreshnessChecker', () => {
 
   describe('checkDataType', () => {
     it('should flag stale FPL data after January', () => {
-      const effectiveDate = new Date('2024-01-01');
-      const checkDate = new Date('2025-02-15');
+      // Use dates where effective year < check year AND check month >= update month (1 = January)
+      // AND check month > update month for 'warning' level
+      const effectiveDate = new Date(2024, 0, 1);
+      const checkDate = new Date(2025, 1, 15); // Feb > Jan, so warningLevel = 'warning'
 
       const result = checker.checkDataType('federal_poverty_level', effectiveDate, checkDate);
 
       expect(result.isStale).toBe(true);
+      // Since checkMonth (2) > updateMonth (1), it should be 'warning'
       expect(result.warningLevel).toBe('warning');
       expect(result.warningMessage).toContain('2024');
       expect(result.warningMessage).toContain('2025');
     });
 
     it('should NOT flag current year FPL data', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-03-15');
+      // FPL updates in January, so 2025-01-01 effective date checked in March 2025
+      // checkYear (2025) > effectiveYear (2025) is FALSE, so NOT stale
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 2, 15);
 
       const result = checker.checkDataType('federal_poverty_level', effectiveDate, checkDate);
 
@@ -32,8 +37,11 @@ describe('FreshnessChecker', () => {
     });
 
     it('should flag stale MSP limits after April', () => {
-      const effectiveDate = new Date('2024-04-01');
-      const checkDate = new Date('2025-05-01');
+      // MSP updates in April (month 4)
+      // checkYear (2025) > effectiveYear (2024) AND checkMonth (5) >= updateMonth (4)
+      // checkMonth (5) > updateMonth (4) so warningLevel = 'warning'
+      const effectiveDate = new Date(2024, 3, 1);
+      const checkDate = new Date(2025, 4, 1);
 
       const result = checker.checkDataType('msp_income_limits', effectiveDate, checkDate);
 
@@ -42,9 +50,12 @@ describe('FreshnessChecker', () => {
       expect(result.warningMessage).toContain('Medicare Savings Program');
     });
 
-    it('should show info warning before typical update month', () => {
-      const effectiveDate = new Date('2024-04-01');
-      const checkDate = new Date('2025-04-01'); // Exactly on update month
+    it('should show info warning ON typical update month', () => {
+      // MSP updates in April (month 4)
+      // checkYear (2025) > effectiveYear (2024) AND checkMonth (4) >= updateMonth (4)
+      // checkMonth (4) == updateMonth (4) so warningLevel = 'info' (not > updateMonth)
+      const effectiveDate = new Date(2024, 3, 1);
+      const checkDate = new Date(2025, 3, 1); // Exactly on update month
 
       const result = checker.checkDataType('msp_income_limits', effectiveDate, checkDate);
 
@@ -53,8 +64,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should flag Part D costs after October', () => {
-      const effectiveDate = new Date('2024-10-01');
-      const checkDate = new Date('2025-11-01');
+      const effectiveDate = new Date(2024, 9, 1);
+      const checkDate = new Date(2025, 10, 1);
 
       const result = checker.checkDataType('part_d_costs', effectiveDate, checkDate);
 
@@ -63,8 +74,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should calculate next expected update correctly', () => {
-      const effectiveDate = new Date('2024-01-01');
-      const checkDate = new Date('2024-06-15'); // Before next January
+      const effectiveDate = new Date(2024, 0, 1);
+      const checkDate = new Date(2024, 5, 15); // Before next January
 
       const result = checker.checkDataType('federal_poverty_level', effectiveDate, checkDate);
 
@@ -74,8 +85,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should escalate to critical for very stale data', () => {
-      const effectiveDate = new Date('2022-01-01');
-      const checkDate = new Date('2025-03-01');
+      const effectiveDate = new Date(2022, 0, 1);
+      const checkDate = new Date(2025, 2, 1);
 
       const result = checker.checkDataType('federal_poverty_level', effectiveDate, checkDate);
 
@@ -85,8 +96,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should handle quarterly data freshness', () => {
-      const effectiveDate = new Date('2024-01-15');
-      const checkDate = new Date('2024-06-01'); // 4+ months later
+      const effectiveDate = new Date(2024, 0, 15);
+      const checkDate = new Date(2024, 5, 1); // 4+ months later
 
       const result = checker.checkDataType('chester_county_contacts', effectiveDate, checkDate);
 
@@ -101,9 +112,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-1',
         documentType: 'msp_guide',
-        effectiveDate: new Date('2024-04-01'),
+        effectiveDate: new Date(2024, 3, 1),
       };
-      const checkDate = new Date('2025-05-15');
+      const checkDate = new Date(2025, 4, 15);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -116,9 +127,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-2',
         documentType: 'income_limits',
-        effectiveDate: new Date('2024-01-01'),
+        effectiveDate: new Date(2024, 0, 1),
       };
-      const checkDate = new Date('2025-02-01');
+      const checkDate = new Date(2025, 1, 1);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -130,7 +141,7 @@ describe('FreshnessChecker', () => {
     it('should return null for documents without type', () => {
       const doc = {
         id: 'doc-3',
-        effectiveDate: new Date('2024-01-01'),
+        effectiveDate: new Date(2024, 0, 1),
       };
 
       const result = checker.checkDocument(doc);
@@ -151,7 +162,7 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-5',
         documentType: 'unknown_type',
-        effectiveDate: new Date('2024-01-01'),
+        effectiveDate: new Date(2024, 0, 1),
       };
 
       const result = checker.checkDocument(doc);
@@ -162,11 +173,11 @@ describe('FreshnessChecker', () => {
   describe('getStaleDataTypes', () => {
     it('should return all stale documents', () => {
       const documents = [
-        { id: 'doc-1', documentType: 'msp_guide', effectiveDate: new Date('2024-04-01') },
-        { id: 'doc-2', documentType: 'income_limits', effectiveDate: new Date('2025-01-01') },
-        { id: 'doc-3', documentType: 'ltc_info', effectiveDate: new Date('2023-01-01') },
+        { id: 'doc-1', documentType: 'msp_guide', effectiveDate: new Date(2024, 3, 1) },
+        { id: 'doc-2', documentType: 'income_limits', effectiveDate: new Date(2025, 0, 1) },
+        { id: 'doc-3', documentType: 'ltc_info', effectiveDate: new Date(2023, 0, 1) },
       ];
-      const checkDate = new Date('2025-05-15');
+      const checkDate = new Date(2025, 4, 15);
 
       const stale = checker.getStaleDataTypes(documents, checkDate);
 
@@ -176,9 +187,9 @@ describe('FreshnessChecker', () => {
 
     it('should return empty array when no documents are stale', () => {
       const documents = [
-        { id: 'doc-1', documentType: 'msp_guide', effectiveDate: new Date('2025-04-01') },
+        { id: 'doc-1', documentType: 'msp_guide', effectiveDate: new Date(2025, 3, 1) },
       ];
-      const checkDate = new Date('2025-04-15');
+      const checkDate = new Date(2025, 3, 15);
 
       const stale = checker.getStaleDataTypes(documents, checkDate);
 
@@ -223,8 +234,8 @@ describe('FreshnessChecker', () => {
       ];
 
       const customChecker = new FreshnessChecker(customRules);
-      const effectiveDate = new Date('2024-01-01');
-      const checkDate = new Date('2025-02-01'); // Before April
+      const effectiveDate = new Date(2024, 0, 1);
+      const checkDate = new Date(2025, 1, 1); // Before April
 
       const result = customChecker.checkDataType('federal_poverty_level', effectiveDate, checkDate);
 
@@ -235,8 +246,8 @@ describe('FreshnessChecker', () => {
 
   describe('Phase 1 data types - Weekly updates', () => {
     it('should flag OIM ops memo data as stale after 7 days', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-01-20'); // 19 days later (> 14 days for warning)
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 0, 20); // 19 days later (> 14 days for warning)
 
       const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
 
@@ -246,8 +257,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should NOT flag OIM ops memo data within 7 days', () => {
-      const effectiveDate = new Date('2025-01-10');
-      const checkDate = new Date('2025-01-15'); // 5 days later
+      const effectiveDate = new Date(2025, 0, 10);
+      const checkDate = new Date(2025, 0, 15); // 5 days later
 
       const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
 
@@ -256,8 +267,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should flag policy clarifications as stale after 7 days', () => {
-      const effectiveDate = new Date('2025-02-01');
-      const checkDate = new Date('2025-02-12'); // 11 days later
+      const effectiveDate = new Date(2025, 1, 1);
+      const checkDate = new Date(2025, 1, 12); // 11 days later
 
       const result = checker.checkDataType('oim_policy_clarification', effectiveDate, checkDate);
 
@@ -266,8 +277,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should flag PA Bulletin DHS notices as stale after 7 days', () => {
-      const effectiveDate = new Date('2025-03-01');
-      const checkDate = new Date('2025-03-10'); // 9 days later
+      const effectiveDate = new Date(2025, 2, 1);
+      const checkDate = new Date(2025, 2, 10); // 9 days later
 
       const result = checker.checkDataType('pa_bulletin_dhs', effectiveDate, checkDate);
 
@@ -275,8 +286,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should show info level for weekly data 8-14 days old', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-01-10'); // 9 days later
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 0, 10); // 9 days later
 
       const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
 
@@ -285,8 +296,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should show warning level for weekly data over 14 days old', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-01-20'); // 19 days later
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 0, 20); // 19 days later
 
       const result = checker.checkDataType('oim_ops_memo', effectiveDate, checkDate);
 
@@ -297,8 +308,8 @@ describe('FreshnessChecker', () => {
 
   describe('Phase 1 data types - Monthly updates', () => {
     it('should flag OIM LTC handbook as stale after 1 month', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-03-15'); // ~2.5 months later
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 2, 15); // ~2.5 months later
 
       const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
 
@@ -307,8 +318,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should NOT flag OIM LTC handbook within 1 month', () => {
-      const effectiveDate = new Date('2025-01-15');
-      const checkDate = new Date('2025-02-01'); // < 1 month
+      const effectiveDate = new Date(2025, 0, 15);
+      const checkDate = new Date(2025, 1, 1); // < 1 month
 
       const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
 
@@ -316,8 +327,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should flag OIM MA handbook as stale after 1 month', () => {
-      const effectiveDate = new Date('2025-02-01');
-      const checkDate = new Date('2025-04-01'); // 2 months later
+      const effectiveDate = new Date(2025, 1, 1);
+      const checkDate = new Date(2025, 3, 1); // 2 months later
 
       const result = checker.checkDataType('oim_ma_handbook', effectiveDate, checkDate);
 
@@ -326,8 +337,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should show info level for monthly data 2-3 months old', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-03-15'); // ~2.5 months
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 2, 15); // ~2.5 months
 
       const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
 
@@ -336,8 +347,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should show warning level for monthly data over 3 months old', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-05-15'); // ~4.5 months
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 4, 15); // ~4.5 months
 
       const result = checker.checkDataType('oim_ltc_handbook', effectiveDate, checkDate);
 
@@ -348,8 +359,8 @@ describe('FreshnessChecker', () => {
 
   describe('Phase 1 data types - As-needed updates', () => {
     it('should NOT flag PA Code chapter as stale (as-needed schedule)', () => {
-      const effectiveDate = new Date('2024-01-01');
-      const checkDate = new Date('2025-06-01'); // 18 months later
+      const effectiveDate = new Date(2024, 0, 1);
+      const checkDate = new Date(2025, 5, 1); // 18 months later
 
       const result = checker.checkDataType('pa_code_chapter_258', effectiveDate, checkDate);
 
@@ -363,9 +374,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-1',
         documentType: 'oim_ltc_handbook',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       };
-      const checkDate = new Date('2025-04-01');
+      const checkDate = new Date(2025, 3, 1);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -378,9 +389,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-2',
         documentType: 'oim_ops_memo',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       };
-      const checkDate = new Date('2025-01-15');
+      const checkDate = new Date(2025, 0, 15);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -392,9 +403,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-3',
         documentType: 'pa_code',
-        effectiveDate: new Date('2024-06-01'),
+        effectiveDate: new Date(2024, 5, 1),
       };
-      const checkDate = new Date('2025-01-01');
+      const checkDate = new Date(2025, 0, 1);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -406,9 +417,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-4',
         documentType: 'pa_bulletin',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       };
-      const checkDate = new Date('2025-01-15');
+      const checkDate = new Date(2025, 0, 15);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -506,8 +517,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should detect stale CHC publications after 3 months', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-05-01'); // 4 months later
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 4, 1); // 4 months later
 
       const result = checker.checkDataType('chc_publications', effectiveDate, checkDate);
 
@@ -516,8 +527,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should not detect stale CHC publications within 3 months', () => {
-      const effectiveDate = new Date('2025-01-01');
-      const checkDate = new Date('2025-03-01'); // 2 months later
+      const effectiveDate = new Date(2025, 0, 1);
+      const checkDate = new Date(2025, 2, 1); // 2 months later
 
       const result = checker.checkDataType('chc_publications', effectiveDate, checkDate);
 
@@ -525,8 +536,8 @@ describe('FreshnessChecker', () => {
     });
 
     it('should detect stale MCO handbook after annual update month', () => {
-      const effectiveDate = new Date('2024-01-01'); // Last year
-      const checkDate = new Date('2025-02-01'); // After January this year
+      const effectiveDate = new Date(2024, 0, 1); // Last year
+      const checkDate = new Date(2025, 1, 1); // After January this year
 
       const result = checker.checkDataType('chc_handbook_upmc', effectiveDate, checkDate);
 
@@ -539,9 +550,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-chc-1',
         documentType: 'chc_publications',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       };
-      const checkDate = new Date('2025-01-15');
+      const checkDate = new Date(2025, 0, 15);
 
       const result = checker.checkDocument(doc, checkDate);
 
@@ -553,9 +564,9 @@ describe('FreshnessChecker', () => {
       const doc = {
         id: 'doc-chc-2',
         documentType: 'chc_handbook',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       };
-      const checkDate = new Date('2025-01-15');
+      const checkDate = new Date(2025, 0, 15);
 
       const result = checker.checkDocument(doc, checkDate);
 

@@ -83,7 +83,7 @@ export class PdfProcessor {
   /**
    * Extract pages from native PDF text
    */
-  private extractPagesFromText(text: string, totalPages: number): OcrPage[] {
+  private extractPagesFromText(text: string, _totalPages: number): OcrPage[] {
     const pages: OcrPage[] = [];
 
     // Split text by form feed or other page markers
@@ -236,12 +236,12 @@ export class PdfProcessor {
       }
 
       // Detect list items
-      if (/^[\-\*\•]\s/.test(trimmed)) {
+      if (/^[-*\u2022]\s/.test(trimmed)) {
         processedLines.push(`- ${trimmed.substring(2).trim()}`);
         continue;
       }
 
-      if (/^\d+[\.\)]\s/.test(trimmed)) {
+      if (/^\d+[.)]\s/.test(trimmed)) {
         processedLines.push(trimmed);
         continue;
       }

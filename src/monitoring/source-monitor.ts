@@ -292,7 +292,7 @@ export class SourceMonitorService {
 
     let sourcesChecked = 0;
     let changesDetected = 0;
-    let ingestionsSucceeded = 0;
+    const ingestionsSucceeded = 0;
     let ingestionsFailed = 0;
 
     // Get monitors to check

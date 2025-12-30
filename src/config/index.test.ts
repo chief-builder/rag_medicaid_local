@@ -6,7 +6,13 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     vi.resetModules();
+    // Clear ALL LM_STUDIO env vars to test defaults properly
     process.env = { ...originalEnv };
+    delete process.env.LM_STUDIO_BASE_URL;
+    delete process.env.LM_STUDIO_OCR_MODEL;
+    delete process.env.LM_STUDIO_LLM_MODEL;
+    delete process.env.LM_STUDIO_EMBEDDING_MODEL;
+    delete process.env.EMBEDDING_DIMENSION;
     resetConfig();
   });
 

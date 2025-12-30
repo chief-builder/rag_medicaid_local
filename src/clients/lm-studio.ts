@@ -72,7 +72,7 @@ export class LMStudioClient {
         );
       }
 
-      return response.data.map((item, index) => ({
+      return response.data.map((item, _index) => ({
         embedding: item.embedding,
         model: this.config.embeddingModel,
         tokenCount: undefined, // Batch doesn't provide per-item token counts

@@ -1,7 +1,9 @@
 import express, { Request, Response, NextFunction, Express } from 'express';
+import http from 'http';
 import { Config, QueryRequest, RagError } from '../types/index.js';
 import { createRetrievalPipeline, RetrievalPipeline } from '../retrieval/pipeline.js';
 import { createIngestionPipeline, IngestionPipeline } from '../ingestion/pipeline.js';
+import { getPostgresStore } from '../clients/postgres.js';
 import { createChildLogger } from '../utils/logger.js';
 
 interface ApiServer {
@@ -57,14 +59,25 @@ export function createApiServer(config: Config): ApiServer {
   // Query endpoint
   app.post('/query', async (req: Request, res: Response) => {
     try {
-      const { query, topK, useCache } = req.body as QueryRequest;
+      const { query, useCache } = req.body as QueryRequest;
 
       if (!query || typeof query !== 'string') {
         res.status(400).json({ error: 'Query is required' });
         return;
       }
 
-      const response = await retrievalPipeline.query(query, { useCache });
+      // Validate query length and content
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.length === 0) {
+        res.status(400).json({ error: 'Query cannot be empty' });
+        return;
+      }
+      if (trimmedQuery.length > 10000) {
+        res.status(400).json({ error: 'Query too long (max 10000 characters)' });
+        return;
+      }
+
+      const response = await retrievalPipeline.query(trimmedQuery, { useCache });
 
       res.json(response);
     } catch (error) {
@@ -87,6 +100,9 @@ export function createApiServer(config: Config): ApiServer {
 
       await ingestionPipeline.initialize();
       const result = await ingestionPipeline.ingestFile(filepath);
+
+      // Invalidate retrieval cache so new documents are visible
+      retrievalPipeline.invalidateMetadataCache();
 
       res.json({
         documentId: result.document.id,
@@ -117,6 +133,9 @@ export function createApiServer(config: Config): ApiServer {
         saveMarkdown,
       });
 
+      // Invalidate retrieval cache so new documents are visible
+      retrievalPipeline.invalidateMetadataCache();
+
       res.json(stats);
     } catch (error) {
       logger.error({ error }, 'Directory ingestion failed');
@@ -139,7 +158,7 @@ export function createApiServer(config: Config): ApiServer {
   });
 
   // Error handling middleware
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     logger.error({ error: err }, 'Unhandled error');
 
     if (err instanceof RagError) {
@@ -159,7 +178,7 @@ export function createApiServer(config: Config): ApiServer {
 }
 
 /**
- * Start the API server
+ * Start the API server with graceful shutdown
  */
 export async function startServer(config: Config, port: number = 3000): Promise<void> {
   const { app, ingestionPipeline } = createApiServer(config);
@@ -167,7 +186,39 @@ export async function startServer(config: Config, port: number = 3000): Promise<
   // Initialize the ingestion pipeline
   await ingestionPipeline.initialize();
 
-  app.listen(port, () => {
+  const server = http.createServer(app);
+
+  // Graceful shutdown handler
+  const gracefulShutdown = async (signal: string) => {
+    logger.info({ signal }, 'Received shutdown signal, closing connections...');
+
+    server.close(async () => {
+      logger.info('HTTP server closed');
+
+      try {
+        // Close database connections
+        const postgres = getPostgresStore(config.postgres);
+        await postgres.close();
+        logger.info('Database connections closed');
+      } catch (error) {
+        logger.error({ error }, 'Error closing database connections');
+      }
+
+      process.exit(0);
+    });
+
+    // Force exit if graceful shutdown takes too long
+    setTimeout(() => {
+      logger.error('Graceful shutdown timed out, forcing exit');
+      process.exit(1);
+    }, 10000);
+  };
+
+  // Register shutdown handlers
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  server.listen(port, () => {
     logger.info({ port }, 'API server started');
   });
 }

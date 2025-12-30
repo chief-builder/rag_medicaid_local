@@ -17,7 +17,7 @@ describe('FreshnessDisplayService', () => {
 
   describe('setSystemIngestionDate', () => {
     it('should set and get system ingestion date', () => {
-      const date = new Date('2025-01-15');
+      const date = new Date(2025, 0, 15);
       service.setSystemIngestionDate(date);
       expect(service.getSystemIngestionDate()).toEqual(date);
     });
@@ -39,7 +39,7 @@ describe('FreshnessDisplayService', () => {
     });
 
     it('should use system ingestion date when set', () => {
-      const systemDate = new Date('2025-01-15');
+      const systemDate = new Date(2025, 0, 15);
       service.setSystemIngestionDate(systemDate);
 
       const citations: Citation[] = [];
@@ -65,7 +65,7 @@ describe('FreshnessDisplayService', () => {
       const documentMetadata = new Map<string, DocumentMetadata>();
       documentMetadata.set('doc-1', {
         documentType: 'income_limits',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       });
 
       const result = service.generateFreshnessInfo(citations, documentMetadata);
@@ -88,7 +88,7 @@ describe('FreshnessDisplayService', () => {
       const documentMetadata = new Map<string, DocumentMetadata>();
       documentMetadata.set('doc-1', {
         documentType: 'income_limits',
-        effectiveDate: new Date('2025-01-01'),
+        effectiveDate: new Date(2025, 0, 1),
       });
 
       const result = service.generateFreshnessInfo(citations, documentMetadata);
@@ -112,11 +112,11 @@ describe('FreshnessDisplayService', () => {
       const documentMetadata = new Map<string, DocumentMetadata>();
       documentMetadata.set('doc-1', {
         documentType: 'oim_ops_memo',
-        effectiveDate: new Date('2024-01-01'), // Old date
+        effectiveDate: new Date(2024, 0, 1), // Old date
       });
 
       // Check in 2025, ops memos should be checked weekly
-      const checkDate = new Date('2025-06-01');
+      const checkDate = new Date(2025, 5, 1);
       const result = service.generateFreshnessInfo(citations, documentMetadata, checkDate);
 
       expect(result.hasStaleData).toBe(true);
@@ -146,14 +146,14 @@ describe('FreshnessDisplayService', () => {
       const documentMetadata = new Map<string, DocumentMetadata>();
       documentMetadata.set('doc-1', {
         documentType: 'oim_ops_memo',
-        effectiveDate: new Date('2024-01-01'),
+        effectiveDate: new Date(2024, 0, 1),
       });
       documentMetadata.set('doc-2', {
         documentType: 'oim_ops_memo',
-        effectiveDate: new Date('2024-01-01'),
+        effectiveDate: new Date(2024, 0, 1),
       });
 
-      const checkDate = new Date('2025-06-01');
+      const checkDate = new Date(2025, 5, 1);
       const result = service.generateFreshnessInfo(citations, documentMetadata, checkDate);
 
       // Should not have duplicate warning messages
@@ -166,7 +166,7 @@ describe('FreshnessDisplayService', () => {
   describe('formatFreshnessSection', () => {
     it('should format basic freshness info', () => {
       const info = {
-        lastRetrieved: new Date('2025-01-15'),
+        lastRetrieved: new Date(2025, 0, 15),
         lastRetrievedFormatted: 'January 15, 2025',
         hasStaleData: false,
         warnings: [],
@@ -180,7 +180,7 @@ describe('FreshnessDisplayService', () => {
 
     it('should include effective period when available', () => {
       const info = {
-        lastRetrieved: new Date('2025-01-15'),
+        lastRetrieved: new Date(2025, 0, 15),
         lastRetrievedFormatted: 'January 15, 2025',
         effectivePeriod: 'Calendar Year 2025 (unless otherwise noted)',
         hasStaleData: false,
@@ -195,7 +195,7 @@ describe('FreshnessDisplayService', () => {
 
     it('should include income limits effective period when available', () => {
       const info = {
-        lastRetrieved: new Date('2025-01-15'),
+        lastRetrieved: new Date(2025, 0, 15),
         lastRetrievedFormatted: 'January 15, 2025',
         incomeLimitsEffective: 'April 2025 - March 2026',
         hasStaleData: false,
@@ -210,7 +210,7 @@ describe('FreshnessDisplayService', () => {
 
     it('should include warnings with appropriate icons', () => {
       const info = {
-        lastRetrieved: new Date('2025-01-15'),
+        lastRetrieved: new Date(2025, 0, 15),
         lastRetrievedFormatted: 'January 15, 2025',
         hasStaleData: true,
         warnings: [
@@ -247,7 +247,7 @@ describe('FreshnessDisplayService', () => {
     it('should add FPL warning in January/February', () => {
       const citations: Citation[] = [];
       const documentMetadata = new Map<string, DocumentMetadata>();
-      const checkDate = new Date('2025-01-15');
+      const checkDate = new Date(2025, 0, 15);
 
       const result = service.generateFreshnessInfo(citations, documentMetadata, checkDate);
 
@@ -260,7 +260,7 @@ describe('FreshnessDisplayService', () => {
     it('should add MSP warning in March-May', () => {
       const citations: Citation[] = [];
       const documentMetadata = new Map<string, DocumentMetadata>();
-      const checkDate = new Date('2025-04-15');
+      const checkDate = new Date(2025, 3, 15);
 
       const result = service.generateFreshnessInfo(citations, documentMetadata, checkDate);
 
@@ -273,7 +273,7 @@ describe('FreshnessDisplayService', () => {
     it('should not add MSP warning outside March-May', () => {
       const citations: Citation[] = [];
       const documentMetadata = new Map<string, DocumentMetadata>();
-      const checkDate = new Date('2025-07-15');
+      const checkDate = new Date(2025, 6, 15);
 
       const result = service.generateFreshnessInfo(citations, documentMetadata, checkDate);
 

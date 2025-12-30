@@ -7,7 +7,6 @@ import {
   Chunk,
   ChunkInput,
   SearchResult,
-  EmbeddingCacheEntry,
   QueryLog,
 } from '../types/index.js';
 import { createChildLogger } from '../utils/logger.js';

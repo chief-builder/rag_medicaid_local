@@ -591,7 +591,7 @@ export class RegulatoryChunker {
     let content = chunk.content;
     const injectedDefs: string[] = [];
 
-    for (const [term, definition] of this.definitions) {
+    for (const [term] of this.definitions) {
       const regex = new RegExp(`\\b${term}\\b`, 'gi');
       if (regex.test(content) && !injectedDefs.includes(term)) {
         injectedDefs.push(term);

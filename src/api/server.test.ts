@@ -33,6 +33,7 @@ vi.mock('../retrieval/pipeline.js', () => ({
       avgLatencyMs: 200,
       noAnswerRate: 0.1,
     }),
+    invalidateMetadataCache: vi.fn(),
   })),
 }));
 

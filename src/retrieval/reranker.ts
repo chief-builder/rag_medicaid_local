@@ -90,7 +90,7 @@ export class Reranker {
    * Simple fallback reranking based on RRF scores
    */
   simpleRerank(results: FusedResult[], topN: number): RerankedResult[] {
-    return results.slice(0, topN).map((r, i) => ({
+    return results.slice(0, topN).map((r) => ({
       ...r,
       rerankScore: r.rrfScore,
     }));
