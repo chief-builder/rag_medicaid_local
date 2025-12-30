@@ -13,7 +13,8 @@
 export * from './types.js';
 
 // Scrapers
-export { BaseScraper, ScraperOptions } from './scrapers/base-scraper.js';
+export { BaseScraper } from './scrapers/base-scraper.js';
+export type { ScraperOptions } from './scrapers/base-scraper.js';
 export {
   OIMOpsMemoScraper,
   OIMPolicyClarificationScraper,

@@ -136,3 +136,41 @@ BEGIN
     WHERE c.id = chunk_uuid;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Source monitors table - tracks sources for change detection
+CREATE TABLE IF NOT EXISTS source_monitors (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    source_name TEXT NOT NULL UNIQUE,
+    source_url TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    check_frequency TEXT NOT NULL DEFAULT 'weekly',
+    last_checked_at TIMESTAMP WITH TIME ZONE,
+    last_content_hash TEXT,
+    last_change_detected_at TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT true,
+    auto_ingest BOOLEAN DEFAULT false,
+    filter_keywords TEXT[],
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_source_monitors_active ON source_monitors(is_active);
+CREATE INDEX IF NOT EXISTS idx_source_monitors_frequency ON source_monitors(check_frequency);
+
+-- Source change log table - records detected changes
+CREATE TABLE IF NOT EXISTS source_change_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    monitor_id UUID NOT NULL REFERENCES source_monitors(id) ON DELETE CASCADE,
+    detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    previous_hash TEXT,
+    new_hash TEXT,
+    change_summary TEXT,
+    items_added INTEGER DEFAULT 0,
+    items_removed INTEGER DEFAULT 0,
+    auto_ingested BOOLEAN DEFAULT false,
+    ingestion_status TEXT DEFAULT 'pending',
+    ingestion_error TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_source_change_log_monitor ON source_change_log(monitor_id);
+CREATE INDEX IF NOT EXISTS idx_source_change_log_detected ON source_change_log(detected_at DESC);
