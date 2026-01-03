@@ -32,5 +32,11 @@ export {
   createCHCScraper,
 } from './scrapers/chc-scraper.js';
 
+// Repository
+export { MonitorRepository, createMonitorRepository } from './monitor-repository.js';
+
+// Registry
+export { ScraperRegistry, createScraperRegistry } from './scraper-registry.js';
+
 // Service
 export { SourceMonitorService, createSourceMonitorService } from './source-monitor.js';
