@@ -4,6 +4,7 @@ import { useSubmitQuery, createUserMessage, createAssistantMessage, createLoadin
 import { useUserMode } from '../hooks/useUserMode';
 import { QueryInput } from '../components/QueryInput';
 import { MessageBubble } from '../components/MessageBubble';
+import { HelpPanel } from '../components/HelpPanel';
 import type { Message } from '../types';
 import styles from './Chat.module.css';
 
@@ -91,33 +92,43 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main id="main-content" className={styles.main}>
-        {/* Messages area */}
-        <div className={styles.messagesContainer}>
-          <div className={styles.messages}>
-            {messages.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <>
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            )}
+      {/* Main content with sidebar layout */}
+      <div className={styles.layout}>
+        <main id="main-content" className={styles.main}>
+          {/* Messages area */}
+          <div className={styles.messagesContainer}>
+            <div className={styles.messages}>
+              {messages.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <>
+                  {messages.map((message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Input area */}
-        <div className={styles.inputContainer}>
-          <QueryInput
-            onSubmit={handleSubmit}
-            isLoading={queryMutation.isPending}
-            autoFocus={messages.length === 0}
-          />
-        </div>
-      </main>
+          {/* Input area */}
+          <div className={styles.inputContainer}>
+            <QueryInput
+              onSubmit={handleSubmit}
+              isLoading={queryMutation.isPending}
+              autoFocus={messages.length === 0}
+            />
+          </div>
+        </main>
+
+        {/* Help panel sidebar (desktop) */}
+        <aside className={styles.helpSidebar}>
+          <HelpPanel variant="sidebar" />
+        </aside>
+      </div>
+
+      {/* Help panel FAB (mobile) */}
+      <HelpPanel variant="floating" />
     </div>
   );
 }
