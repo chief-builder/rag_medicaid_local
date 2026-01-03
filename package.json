@@ -6,9 +6,13 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "build:frontend": "cd src/frontend && pnpm build",
+    "build:all": "pnpm build && pnpm build:frontend",
     "typecheck": "tsc --noEmit",
     "dev": "tsx watch src/index.ts",
+    "dev:frontend": "cd src/frontend && pnpm dev",
     "start": "node dist/index.js",
+    "start:prod": "NODE_ENV=production node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --config vitest.config.ts --exclude 'tests/integration/**' --exclude 'tests/e2e/**' --exclude 'tests/performance/**'",

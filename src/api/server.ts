@@ -1,10 +1,15 @@
 import express, { Request, Response, NextFunction, Express } from 'express';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Config, QueryRequest, RagError } from '../types/index.js';
 import { createRetrievalPipeline, RetrievalPipeline } from '../retrieval/pipeline.js';
 import { createIngestionPipeline, IngestionPipeline } from '../ingestion/pipeline.js';
 import { getPostgresStore } from '../clients/postgres.js';
 import { createChildLogger } from '../utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface ApiServer {
   app: Express;
@@ -156,6 +161,30 @@ export function createApiServer(config: Config): ApiServer {
       });
     }
   });
+
+  // Serve static frontend files in production
+  if (process.env.NODE_ENV === 'production') {
+    // When compiled, __dirname is dist/api/, so ../frontend resolves to dist/frontend/
+    const frontendPath = path.join(__dirname, '../frontend');
+    logger.info({ frontendPath }, 'Serving static frontend files');
+
+    // Serve static assets
+    app.use(express.static(frontendPath));
+
+    // SPA fallback - serve index.html for all non-API routes
+    app.get('*', (req: Request, res: Response, next: NextFunction) => {
+      // Skip API routes
+      if (
+        req.path.startsWith('/query') ||
+        req.path.startsWith('/health') ||
+        req.path.startsWith('/metrics') ||
+        req.path.startsWith('/ingest')
+      ) {
+        return next();
+      }
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+  }
 
   // Error handling middleware
   app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
