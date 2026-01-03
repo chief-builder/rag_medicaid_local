@@ -1,0 +1,174 @@
+/* FreshnessBadge - Data currency and staleness indicator */
+
+.container {
+  margin-top: var(--space-3);
+}
+
+/* Main badge button */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 36px;
+}
+
+.badge:disabled {
+  cursor: default;
+}
+
+.badge:not(:disabled):hover {
+  filter: brightness(0.95);
+}
+
+.badge:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Current (fresh) state */
+.current {
+  background: var(--accent-safe-light);
+  color: var(--accent-safe);
+}
+
+/* Warning (stale) state */
+.warning {
+  background: var(--accent-gold-light);
+  color: #8B6914;
+}
+
+/* Icon */
+.icon {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+/* Badge text */
+.text {
+  line-height: var(--line-height-tight);
+}
+
+/* Expand/collapse chevron */
+.chevron {
+  font-size: 0.5rem;
+  margin-left: var(--space-1);
+  transition: transform var(--transition-fast);
+}
+
+.chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* Expanded details panel */
+.details {
+  overflow: hidden;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border-left: 3px solid var(--accent-gold);
+}
+
+/* Warning list section */
+.warningList {
+  margin-bottom: var(--space-3);
+}
+
+.warningTitle {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.warnings {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Individual warning item */
+.warningItem {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+}
+
+.warningType {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-right: var(--space-1);
+}
+
+.warningMessage {
+  color: var(--text-secondary);
+}
+
+.warningDetails {
+  margin-top: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.warningDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Date details section (caregiver mode) */
+.dateDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--bg-hover);
+}
+
+.dateItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dateLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.dateValue {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .badge {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .details {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .dateDetails {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+}

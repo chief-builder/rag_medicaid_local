@@ -1,0 +1,228 @@
+/* Chat page styles */
+/* Full-height layout with sticky header and input */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--bg-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.logo:hover {
+  color: var(--accent-teal);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Mode toggle button */
+.modeToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-secondary);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.modeToggle:hover {
+  background: var(--bg-hover);
+}
+
+.modeToggle:focus-visible {
+  outline: 3px solid var(--accent-teal);
+  outline-offset: 2px;
+}
+
+.modeLabel {
+  font-weight: 500;
+}
+
+.modeIndicator {
+  width: 36px;
+  height: 20px;
+  background: var(--text-muted);
+  border-radius: var(--radius-full);
+  position: relative;
+  transition: background-color var(--transition-fast);
+}
+
+.modeIndicator::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform var(--transition-fast);
+}
+
+.modeIndicator.active {
+  background: var(--accent-teal);
+}
+
+.modeIndicator.active::after {
+  transform: translateX(16px);
+}
+
+/* Main content area */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Messages container */
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Input container */
+.inputContainer {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-primary);
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+}
+
+.emptyDescription {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0 0 var(--space-8);
+}
+
+.exampleQuestions {
+  text-align: left;
+  background: var(--bg-card);
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-6);
+}
+
+.exampleLabel {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-3);
+}
+
+.exampleList {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--text-primary);
+}
+
+.exampleList li {
+  margin-bottom: var(--space-2);
+  font-style: italic;
+}
+
+.exampleList li:last-child {
+  margin-bottom: 0;
+}
+
+.helpNote {
+  padding: var(--space-4);
+  background: var(--accent-teal-light);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.phoneLink {
+  color: var(--accent-teal);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.phoneLink:hover {
+  text-decoration: underline;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .logo {
+    font-size: var(--text-lg);
+  }
+
+  .modeLabel {
+    display: none;
+  }
+
+  .messagesContainer {
+    padding: var(--space-4);
+  }
+
+  .emptyState {
+    padding: var(--space-6) var(--space-2);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .modeIndicator::after {
+    transition: none;
+  }
+}
