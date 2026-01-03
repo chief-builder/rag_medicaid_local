@@ -1,13 +1,18 @@
 import { readdir, writeFile, mkdir } from 'fs/promises';
 import { join, basename, extname } from 'path';
+import { tmpdir } from 'os';
 import {
   Config,
   Document,
   Chunk,
   RagError,
+  DocumentType,
+  SourceAuthority,
+  LegalWeight,
 } from '../types/index.js';
 import { hashFile, hashString } from '../utils/hash.js';
 import { createChildLogger } from '../utils/logger.js';
+import { sanitizeForPostgres } from '../utils/text-sanitizer.js';
 import { LMStudioClient, getLMStudioClient } from '../clients/lm-studio.js';
 import { QdrantStore, getQdrantStore, QdrantPayload } from '../clients/qdrant.js';
 import { PostgresStore, getPostgresStore } from '../clients/postgres.js';
@@ -337,6 +342,205 @@ export class IngestionPipeline {
       documentCount: docs.length,
       vectorCount: qdrantInfo.vectorCount,
     };
+  }
+
+  /**
+   * Ingest content from a URL (HTML or PDF)
+   */
+  async ingestFromUrl(
+    url: string,
+    options?: {
+      title?: string;
+      documentType?: DocumentType;
+      sourceAuthority?: SourceAuthority;
+      legalWeight?: LegalWeight;
+    }
+  ): Promise<{ document: Document; chunks: Chunk[] }> {
+    logger.info({ url, options }, 'Ingesting from URL');
+
+    // Fetch the content
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'RAG-Medicaid-Local/1.0',
+        Accept: 'text/html,application/pdf,application/xhtml+xml,*/*',
+      },
+    });
+
+    if (!response.ok) {
+      throw new RagError(
+        `Failed to fetch URL: ${response.status} ${response.statusText}`,
+        'FETCH_ERROR'
+      );
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const isPdf = contentType.includes('application/pdf') || url.endsWith('.pdf');
+
+    if (isPdf) {
+      // Download PDF to temp file and process
+      const buffer = await response.arrayBuffer();
+      const tempPath = join(tmpdir(), `ingest-${Date.now()}.pdf`);
+      await writeFile(tempPath, Buffer.from(buffer));
+
+      try {
+        const result = await this.ingestFile(tempPath);
+        // Update document with URL metadata
+        // Note: Document already created, metadata update would need separate method
+        return result;
+      } finally {
+        // Clean up temp file
+        try {
+          const { unlink } = await import('fs/promises');
+          await unlink(tempPath);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+    }
+
+    // Handle HTML content
+    const html = await response.text();
+    const textContent = this.stripHtml(html);
+    const sanitizedContent = sanitizeForPostgres(textContent);
+    const contentHash = hashString(sanitizedContent);
+
+    // Check if already ingested
+    const existingDoc = await this.postgres.getDocumentByHash(contentHash);
+    if (existingDoc) {
+      logger.info({ url, hash: contentHash }, 'URL content already ingested');
+      const chunks = await this.postgres.getChunksByDocument(existingDoc.id);
+      return { document: existingDoc, chunks };
+    }
+
+    // Create document record
+    const title = options?.title || this.extractTitle(sanitizedContent, url);
+    const document = await this.postgres.insertDocument({
+      filename: new URL(url).pathname.split('/').pop() || 'web-content',
+      filepath: url,
+      fileHash: contentHash,
+      title,
+      metadata: {
+        sourceUrl: url,
+        processedAt: new Date().toISOString(),
+        contentType,
+      },
+      documentType: options?.documentType,
+      sourceAuthority: options?.sourceAuthority,
+      legalWeight: options?.legalWeight,
+    });
+
+    // Chunk the content
+    const chunkInputs = this.chunker.chunk(sanitizedContent, document.id, {
+      filename: document.filename,
+      title: document.title,
+    });
+
+    // Store chunks in Postgres
+    const chunks = await this.postgres.insertChunksBatch(chunkInputs);
+
+    // Generate embeddings and store in Qdrant
+    await this.embedAndStoreChunks(chunks, document);
+
+    logger.info(
+      { url, documentId: document.id, chunkCount: chunks.length },
+      'URL ingestion complete'
+    );
+
+    return { document, chunks };
+  }
+
+  /**
+   * Ingest multiple scraped items from source monitoring
+   */
+  async ingestScrapedItems(
+    items: Array<{
+      url: string;
+      title?: string;
+      date?: Date;
+      description?: string;
+    }>,
+    sourceType: DocumentType,
+    sourceAuthority: SourceAuthority = 'primary',
+    legalWeight: LegalWeight = 'guidance'
+  ): Promise<IngestionStats> {
+    const stats: IngestionStats = {
+      documentsProcessed: 0,
+      documentsSkipped: 0,
+      chunksCreated: 0,
+      vectorsStored: 0,
+      errors: [],
+    };
+
+    logger.info(
+      { itemCount: items.length, sourceType },
+      'Ingesting scraped items'
+    );
+
+    for (const item of items) {
+      try {
+        const { document, chunks } = await this.ingestFromUrl(item.url, {
+          title: item.title,
+          documentType: sourceType,
+          sourceAuthority,
+          legalWeight,
+        });
+
+        // Check if this was new or existing
+        const contentHash = hashString(item.url);
+        const wasNew = document.ingestedAt.getTime() > Date.now() - 60000; // Created within last minute
+
+        if (wasNew) {
+          stats.documentsProcessed++;
+          stats.chunksCreated += chunks.length;
+          stats.vectorsStored += chunks.length;
+        } else {
+          stats.documentsSkipped++;
+        }
+      } catch (error) {
+        const errorMsg = `Failed to ingest ${item.url}: ${error instanceof Error ? error.message : String(error)}`;
+        logger.error({ error, url: item.url }, 'Ingestion failed for URL');
+        stats.errors.push(errorMsg);
+      }
+    }
+
+    logger.info({ stats }, 'Scraped items ingestion complete');
+    return stats;
+  }
+
+  /**
+   * Strip HTML tags and extract text content
+   */
+  private stripHtml(html: string): string {
+    // Remove script and style elements entirely
+    let text = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
+    // Remove HTML comments
+    text = text.replace(/<!--[\s\S]*?-->/g, '');
+
+    // Replace common block elements with newlines
+    text = text.replace(/<\/?(p|div|br|h[1-6]|li|tr|td|th|blockquote)[^>]*>/gi, '\n');
+
+    // Remove all remaining HTML tags
+    text = text.replace(/<[^>]+>/g, '');
+
+    // Decode HTML entities
+    text = text.replace(/&nbsp;/g, ' ');
+    text = text.replace(/&amp;/g, '&');
+    text = text.replace(/&lt;/g, '<');
+    text = text.replace(/&gt;/g, '>');
+    text = text.replace(/&quot;/g, '"');
+    text = text.replace(/&#39;/g, "'");
+    text = text.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec));
+
+    // Clean up whitespace
+    text = text.replace(/\t/g, ' ');
+    text = text.replace(/ +/g, ' ');
+    text = text.replace(/\n +/g, '\n');
+    text = text.replace(/ +\n/g, '\n');
+    text = text.replace(/\n{3,}/g, '\n\n');
+
+    return text.trim();
   }
 }
 

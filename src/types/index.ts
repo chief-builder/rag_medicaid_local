@@ -1,6 +1,39 @@
 import { z } from 'zod';
 
 // ============================================================
+// Re-export shared API types
+// ============================================================
+
+// Import types for use in this file
+import type {
+  DocumentType as DocumentTypeImport,
+  SourceAuthority as SourceAuthorityImport,
+  LegalWeight as LegalWeightImport,
+} from '../shared/api-types.js';
+
+// Re-export all shared types
+export type {
+  DocumentType,
+  SourceAuthority,
+  LegalWeight,
+  SensitiveCategory,
+  QueryRequest as SharedQueryRequest,
+  Citation as SharedCitation,
+  RetrievalStats,
+  FreshnessWarning,
+  FreshnessInfo,
+  DisclaimerInfo,
+  QueryResponse as SharedQueryResponse,
+  HealthResponse,
+  MetricsResponse,
+} from '../shared/api-types.js';
+
+// Local aliases for use in interfaces below
+type DocumentType = DocumentTypeImport;
+type SourceAuthority = SourceAuthorityImport;
+type LegalWeight = LegalWeightImport;
+
+// ============================================================
 // Configuration Types
 // ============================================================
 
@@ -39,46 +72,6 @@ export const ConfigSchema = z.object({
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
-
-// ============================================================
-// Document Types
-// ============================================================
-
-/**
- * Document type classifications for Pennsylvania Medicaid sources
- */
-export type DocumentType =
-  | 'msp_guide'
-  | 'income_limits'
-  | 'ltc_info'
-  | 'estate_recovery'
-  | 'pace_pacenet'
-  | 'life_program'
-  | 'chc_waiver'
-  | 'general_eligibility'
-  | 'dual_eligible'
-  | 'extra_help'
-  // Phase 1 additions
-  | 'oim_ltc_handbook'
-  | 'oim_ma_handbook'
-  | 'oim_ops_memo'
-  | 'oim_policy_clarification'
-  | 'pa_code'
-  | 'pa_bulletin'
-  // Phase 2 (future)
-  | 'chc_publications'
-  | 'chc_handbook'
-  | 'policy_index';
-
-/**
- * Source authority classification
- */
-export type SourceAuthority = 'primary' | 'secondary';
-
-/**
- * Legal weight of a document
- */
-export type LegalWeight = 'regulatory' | 'guidance' | 'informational';
 
 /**
  * Source format for documents

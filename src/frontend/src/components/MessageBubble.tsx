@@ -87,8 +87,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   Sources ({message.citations.length}):
                 </span>
                 <div className={styles.citationCards}>
-                  {message.citations.map((citation) => (
-                    <CitationCard key={citation.index} citation={citation} />
+                  {message.citations.map((citation, idx) => (
+                    <CitationCard key={citation.index ?? idx} citation={citation} index={idx} />
                   ))}
                 </div>
               </div>

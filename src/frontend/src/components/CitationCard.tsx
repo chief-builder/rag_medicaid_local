@@ -6,6 +6,7 @@ import styles from './CitationCard.module.css';
 
 interface CitationCardProps {
   citation: Citation;
+  index: number;
 }
 
 /**
@@ -13,7 +14,7 @@ interface CitationCardProps {
  * Collapsed: Shows citation number, filename, page
  * Expanded: Shows full excerpt, document type, legal weight
  */
-export function CitationCard({ citation }: CitationCardProps) {
+export function CitationCard({ citation, index }: CitationCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { isCaregiver } = useUserMode();
   const contentId = useId();
@@ -37,11 +38,11 @@ export function CitationCard({ citation }: CitationCardProps) {
         aria-expanded={isExpanded}
         aria-controls={contentId}
       >
-        <span className={styles.index}>[{citation.index}]</span>
+        <span className={styles.index}>[{citation.index ?? index + 1}]</span>
 
         <span className={styles.title}>
           {formatFilename(citation.filename)}
-          {citation.pageNumber > 0 && (
+          {citation.pageNumber != null && citation.pageNumber > 0 && (
             <span className={styles.page}>, Page {citation.pageNumber}</span>
           )}
         </span>

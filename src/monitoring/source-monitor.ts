@@ -15,6 +15,8 @@ import { BaseScraper, ScraperOptions } from './scrapers/base-scraper.js';
 import { createOIMScraper } from './scrapers/oim-scraper.js';
 import { createPAScraper } from './scrapers/pa-bulletin-scraper.js';
 import { createCHCScraper } from './scrapers/chc-scraper.js';
+import { IngestionPipeline, createIngestionPipeline } from '../ingestion/pipeline.js';
+import { Config, DocumentType, LegalWeight } from '../types/index.js';
 
 const logger = createChildLogger('source-monitor');
 
@@ -24,9 +26,13 @@ const logger = createChildLogger('source-monitor');
 export class SourceMonitorService {
   private pool: Pool;
   private scrapers: Map<SourceType, BaseScraper> = new Map();
+  private ingestionPipeline: IngestionPipeline | null = null;
 
-  constructor(pool: Pool) {
+  constructor(pool: Pool, config?: Config) {
     this.pool = pool;
+    if (config) {
+      this.ingestionPipeline = createIngestionPipeline(config);
+    }
     this.initializeScrapers();
   }
 
@@ -292,7 +298,7 @@ export class SourceMonitorService {
 
     let sourcesChecked = 0;
     let changesDetected = 0;
-    const ingestionsSucceeded = 0;
+    let ingestionsSucceeded = 0;
     let ingestionsFailed = 0;
 
     // Get monitors to check
@@ -348,19 +354,53 @@ export class SourceMonitorService {
           // Auto-ingest if enabled and not a dry run
           if (monitor.autoIngest && !options.dryRun) {
             try {
-              // TODO: Call ingestion pipeline for new items
-              // For now, just log that we would ingest
-              logger.info(
-                {
-                  sourceName: monitor.sourceName,
-                  newItems: changeDetection.newItems.length,
-                },
-                'Would ingest new items (ingestion not yet implemented)'
-              );
+              if (!this.ingestionPipeline) {
+                logger.warn(
+                  { sourceName: monitor.sourceName },
+                  'Ingestion pipeline not configured, skipping auto-ingest'
+                );
+                ingestionStatus = 'skipped';
+              } else if (changeDetection.newItems.length > 0) {
+                // Map source type to document type and legal weight
+                const { documentType, legalWeight } = this.mapSourceTypeToDocumentType(
+                  monitor.sourceType
+                );
 
-              // Mark as success for now (actual ingestion TBD)
-              ingestionStatus = 'pending'; // Will be 'success' when implemented
-              ingested = false; // Will be true when implemented
+                // Ingest the new items
+                const ingestionStats = await this.ingestionPipeline.ingestScrapedItems(
+                  changeDetection.newItems,
+                  documentType,
+                  'primary',
+                  legalWeight
+                );
+
+                if (ingestionStats.errors.length > 0) {
+                  ingestionStatus = 'failed';
+                  ingestionError = ingestionStats.errors.join('; ');
+                  ingestionsFailed++;
+                } else {
+                  ingestionStatus = 'success';
+                  ingested = true;
+                  ingestionsSucceeded++;
+                }
+
+                logger.info(
+                  {
+                    sourceName: monitor.sourceName,
+                    processed: ingestionStats.documentsProcessed,
+                    skipped: ingestionStats.documentsSkipped,
+                    chunks: ingestionStats.chunksCreated,
+                    errors: ingestionStats.errors.length,
+                  },
+                  'Ingested new items from source'
+                );
+              } else {
+                ingestionStatus = 'skipped';
+                logger.debug(
+                  { sourceName: monitor.sourceName },
+                  'No new items to ingest'
+                );
+              }
             } catch (error) {
               ingestionStatus = 'failed';
               ingestionError = error instanceof Error ? error.message : String(error);
@@ -478,11 +518,43 @@ export class SourceMonitorService {
       byFrequency,
     };
   }
+
+  /**
+   * Map source type to document type and legal weight for ingestion
+   */
+  private mapSourceTypeToDocumentType(sourceType: SourceType): {
+    documentType: DocumentType;
+    legalWeight: LegalWeight;
+  } {
+    switch (sourceType) {
+      case 'oim_ops_memo':
+        return { documentType: 'oim_ops_memo', legalWeight: 'guidance' };
+      case 'oim_policy_clarification':
+        return { documentType: 'oim_policy_clarification', legalWeight: 'guidance' };
+      case 'oim_handbook':
+        return { documentType: 'oim_ltc_handbook', legalWeight: 'guidance' };
+      case 'pa_bulletin':
+        return { documentType: 'pa_bulletin', legalWeight: 'regulatory' };
+      case 'pa_code':
+        return { documentType: 'pa_code', legalWeight: 'regulatory' };
+      case 'chc_publications':
+        return { documentType: 'chc_waiver', legalWeight: 'informational' };
+      case 'chc_handbook':
+        return { documentType: 'chc_waiver', legalWeight: 'guidance' };
+      case 'dhs_page':
+        return { documentType: 'general_eligibility', legalWeight: 'informational' };
+      default:
+        return { documentType: 'general_eligibility', legalWeight: 'informational' };
+    }
+  }
 }
 
 /**
  * Create a source monitor service instance
  */
-export function createSourceMonitorService(pool: Pool): SourceMonitorService {
-  return new SourceMonitorService(pool);
+export function createSourceMonitorService(
+  pool: Pool,
+  config?: Config
+): SourceMonitorService {
+  return new SourceMonitorService(pool, config);
 }

@@ -1,120 +1,38 @@
 /**
- * Shared TypeScript types for the PA Medicaid Assistant frontend
- * These mirror the backend API response types
+ * Frontend types for the PA Medicaid Assistant
+ * Re-exports shared API types and defines frontend-specific types
  */
 
-// ============================================
-// API Request/Response Types
-// ============================================
-
-export interface QueryRequest {
-  query: string;
-  useCache?: boolean;
-}
-
-export interface Citation {
-  index: number;
-  filename: string;
-  pageNumber: number;
-  content: string;
-  documentType?: DocumentType;
-  sourceAuthority?: SourceAuthority;
-  legalWeight?: LegalWeight;
-}
-
-export interface RetrievalStats {
-  vectorResults: number;
-  bm25Results: number;
-  fusedResults: number;
-  rerankedResults: number;
-  finalResults: number;
-}
-
-export interface FreshnessInfo {
-  lastRetrieved?: string;
-  effectivePeriod?: string;
-  incomeLimitsEffective?: string;
-  hasStaleData: boolean;
-  warningCount: number;
-  warnings?: FreshnessWarning[];
-}
-
-export interface FreshnessWarning {
-  dataType: string;
-  message: string;
-  lastUpdate?: string;
-  expectedUpdate?: string;
-}
-
-export interface QueryResponse {
-  answer: string;
-  citations: Citation[];
-  confidence: number;
-  queryId: string;
-  latencyMs: number;
-  retrievalStats: RetrievalStats;
-  freshnessInfo?: FreshnessInfo;
-  disclaimer?: DisclaimerInfo;
-}
-
-export interface DisclaimerInfo {
-  category: SensitiveCategory;
-  text: string;
-  referral?: string;
-}
-
-export interface HealthResponse {
-  status: 'healthy' | 'unhealthy';
-  documentCount?: number;
-  vectorCount?: number;
-  error?: string;
-}
-
-export interface MetricsResponse {
-  totalQueries: number;
-  avgLatencyMs: number;
-  noAnswerRate: number;
-}
+// Re-export all shared API types
+export type {
+  DocumentType,
+  SourceAuthority,
+  LegalWeight,
+  SensitiveCategory,
+  QueryRequest,
+  Citation,
+  RetrievalStats,
+  FreshnessWarning,
+  FreshnessInfo,
+  DisclaimerInfo,
+  QueryResponse,
+  HealthResponse,
+  MetricsResponse,
+} from '@shared/api-types';
 
 // ============================================
-// Document Classification Types
-// ============================================
-
-export type DocumentType =
-  | 'msp_guide'
-  | 'income_limits'
-  | 'ltc_info'
-  | 'estate_recovery'
-  | 'pace_pacenet'
-  | 'life_program'
-  | 'chc_waiver'
-  | 'general_eligibility'
-  | 'dual_eligible'
-  | 'extra_help'
-  | 'oim_ltc_handbook'
-  | 'oim_ma_handbook'
-  | 'oim_ops_memo'
-  | 'oim_policy_clarification'
-  | 'pa_code'
-  | 'pa_bulletin';
-
-export type SourceAuthority = 'primary' | 'secondary';
-
-export type LegalWeight = 'regulatory' | 'guidance' | 'informational';
-
-export type SensitiveCategory =
-  | 'estate_planning'
-  | 'spend_down'
-  | 'asset_transfer'
-  | 'spousal_complex'
-  | 'appeals'
-  | 'look_back_period';
-
-// ============================================
-// UI State Types
+// UI State Types (Frontend-specific)
 // ============================================
 
 export type UserMode = 'senior' | 'caregiver';
+
+// Import types we need for Message interface
+import type {
+  Citation,
+  RetrievalStats,
+  FreshnessInfo,
+  DisclaimerInfo,
+} from '@shared/api-types';
 
 export interface Message {
   id: string;
@@ -138,7 +56,7 @@ export interface Conversation {
 }
 
 // ============================================
-// Help Resources
+// Help Resources (Frontend-specific)
 // ============================================
 
 export interface HelpResource {
@@ -185,7 +103,7 @@ export const HELP_RESOURCES: HelpResource[] = [
 ];
 
 // ============================================
-// Quick Topic Cards
+// Quick Topic Cards (Frontend-specific)
 // ============================================
 
 export interface QuickTopic {
@@ -240,7 +158,7 @@ export const QUICK_TOPICS: QuickTopic[] = [
 ];
 
 // ============================================
-// Utility Types
+// Utility Types (Frontend-specific)
 // ============================================
 
 export type AsyncState<T> =
