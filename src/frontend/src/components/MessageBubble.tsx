@@ -3,7 +3,28 @@ import type { Message } from '../types';
 import { useUserMode } from '../hooks/useUserMode';
 import { CitationCard } from './CitationCard';
 import { FreshnessBadge } from './FreshnessBadge';
+import { DisclaimerBanner } from './DisclaimerBanner';
 import styles from './MessageBubble.module.css';
+
+/**
+ * Strip source information text from content for Simple View mode
+ * Removes Citations, Source Information, and Note sections from the raw text
+ */
+function stripSourceInfo(content: string): string {
+  // Split by common section markers and keep only the main answer
+  const markers = [
+    /\nCitations:.*$/s,
+    /\n---\n\*\*Source Information\*\*.*$/s,
+    /\n---\s*\n.*$/s,
+  ];
+
+  let cleaned = content;
+  for (const marker of markers) {
+    cleaned = cleaned.replace(marker, '');
+  }
+
+  return cleaned.trim();
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -16,6 +37,15 @@ interface MessageBubbleProps {
 export function MessageBubble({ message }: MessageBubbleProps) {
   const { isCaregiver } = useUserMode();
   const isUser = message.type === 'user';
+
+  // Simple View (senior mode) hides detailed citation info
+  // Detailed View (caregiver mode) shows citations and freshness info
+  const showDetailedInfo = isCaregiver;
+
+  // Get display content - strip source info in Simple View
+  const displayContent = showDetailedInfo
+    ? message.content
+    : stripSourceInfo(message.content);
 
   // Format timestamp for display
   const formattedTime = message.timestamp.toLocaleTimeString([], {
@@ -43,15 +73,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {!message.isLoading && !message.error && (
           <>
             <div className={styles.content}>
-              {message.content.split('\n').map((paragraph, i) => (
+              {displayContent.split('\n').map((paragraph, i) => (
                 <p key={i} className={styles.paragraph}>
                   {paragraph}
                 </p>
               ))}
             </div>
 
-            {/* Citations - expandable cards */}
-            {message.citations && message.citations.length > 0 && (
+            {/* Citations - expandable cards (only in Detailed View) */}
+            {showDetailedInfo && message.citations && message.citations.length > 0 && (
               <div className={styles.citations}>
                 <span className={styles.citationsLabel}>
                   Sources ({message.citations.length}):
@@ -64,21 +94,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               </div>
             )}
 
-            {/* Freshness badge - shows data currency */}
-            {message.freshnessInfo && (
+            {/* Freshness badge - shows data currency (only in Detailed View) */}
+            {showDetailedInfo && message.freshnessInfo && (
               <FreshnessBadge freshnessInfo={message.freshnessInfo} />
             )}
 
-            {/* Disclaimer (if sensitive topic) */}
+            {/* Disclaimer banner for sensitive topics */}
             {message.disclaimer && (
-              <div className={styles.disclaimer} role="note">
-                <span className={styles.disclaimerIcon} aria-hidden="true">ℹ️</span>
-                <div>
-                  <p className={styles.disclaimerText}>{message.disclaimer.text}</p>
-                  {message.disclaimer.referral && (
-                    <p className={styles.referral}>{message.disclaimer.referral}</p>
-                  )}
-                </div>
+              <div className={styles.disclaimerWrapper}>
+                <DisclaimerBanner disclaimer={message.disclaimer} />
               </div>
             )}
 
